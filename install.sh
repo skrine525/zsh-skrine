@@ -5,18 +5,14 @@ DEST_DIR="$HOME/.zsh-skrine"
 
 # Проверяем, существует ли папка
 if [ -d "$DEST_DIR" ]; then
-    echo "Папка $DEST_DIR уже существует, выполняем rebase..."
-    
-    # Переходим в папку репозитория
+    echo "Updating..."
     cd "$DEST_DIR" || exit 1
-
-    # Получаем последние изменения и выполняем rebase
     git fetch origin
     git rebase origin/dev
 else
-    echo "Папка $DEST_DIR не существует, клонируем репозиторий..."
+    echo "Clonning..."
     git clone "$REPO_URL" "$DEST_DIR"
     git checkout dev
 fi
 
-echo "Репозиторий успешно обновлен или клонирован в $DEST_DIR"
+zsh

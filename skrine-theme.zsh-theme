@@ -353,5 +353,8 @@ alias l='ls -CF'
 # docker compose
 alias dc='docker compose'
 
+# update theme
+alias update-skrine-theme="wget -qO - https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/dev/install.sh | sh &> /dev/null"
+
 ### END OF ALIASES
 ##################################################
