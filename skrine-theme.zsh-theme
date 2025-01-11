@@ -354,7 +354,7 @@ alias l='ls -CF'
 alias dc='docker compose'
 
 # update theme
-alias update-skrine-theme="wget --no-cache -qO - https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/dev/install.sh | sh"
+alias update-theme="wget --no-cache -qO - https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/dev/install.sh | sh"
 
 ### END OF ALIASES
 ##################################################
