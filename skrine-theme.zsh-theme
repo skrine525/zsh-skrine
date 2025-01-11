@@ -342,6 +342,9 @@ fi
 ##################################################
 ### ALIASES
 
+# update theme
+alias update-theme="wget --no-cache -qO - https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/dev/install.sh | sh"
+
 # force zsh to show the complete history
 alias history="history 0"
 
@@ -352,9 +355,6 @@ alias l='ls -CF'
 
 # docker compose
 alias dc='docker compose'
-
-# update theme
-alias update-theme="wget --no-cache -qO - https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/dev/install.sh | sh"
 
 ### END OF ALIASES
 ##################################################
