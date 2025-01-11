@@ -5,9 +5,10 @@ DEST_DIR="$HOME/.zsh-skrine"
 
 if [ -d "$DEST_DIR" ]; then
     echo "Updating..."
+
     cd "$DEST_DIR" || exit 1
     git fetch --all
-    git pull origin dev --rebase > /dev/null 2>&1
+    git pull origin dev --rebase
 
     if [ $? -ne 0 ]; then
         echo "Git rebase failed. Exiting..."
@@ -15,6 +16,7 @@ if [ -d "$DEST_DIR" ]; then
     fi
 else
     echo "Clonning..."
+    
     git clone "$REPO_URL" "$DEST_DIR" > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
