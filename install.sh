@@ -15,4 +15,5 @@ else
     git checkout dev
 fi
 
+ln -s "$HOME/.zsh-skrine/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
 zsh
