@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 
 REPO_URL="https://github.com/skrine525/zsh-skrine"
 DEST_DIR="$HOME/.zsh-skrine"
