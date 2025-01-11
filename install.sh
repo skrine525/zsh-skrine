@@ -16,4 +16,4 @@ else
 fi
 
 ln -sf "$HOME/.zsh-skrine/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
-source "$HOME/.zshrc"
+zsh source "$HOME/.zshrc"
