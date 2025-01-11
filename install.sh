@@ -22,5 +22,5 @@ else
     fi
 fi
 
-ln -sf "$HOME/.zsh-skrine/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
+ln -sf "$DEST_DIR/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
 echo "Success. Restart your zsh."
