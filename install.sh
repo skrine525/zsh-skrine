@@ -25,19 +25,19 @@ if [ -d "$DEST_DIR" ]; then
     git reset --hard origin/dev > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
-        echo "Git reset failed. Exiting..."
+        echo "Updating failed. Exiting..."
         exit 1
     fi
 
     ln -sf "$DEST_DIR/theme/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
     echo "Success. Restart your zsh."
 else
-    echo "Cloning..."
+    echo "Installing..."
 
     git clone "$REPO_URL" "$DEST_DIR" > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
-        echo "Git clone failed. Exiting..."
+        echo "Installing failed. Exiting..."
         exit 1
     fi
 
