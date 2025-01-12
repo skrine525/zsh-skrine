@@ -7,11 +7,10 @@ if [ -d "$DEST_DIR" ]; then
     echo "Updating..."
 
     cd "$DEST_DIR" || exit 1
-    git fetch origin > /dev/null 2>&1
-    git reset --hard origin/dev > /dev/null 2>&1
+    git pull origin dev -X theirs
 
     if [ $? -ne 0 ]; then
-        echo "Git rebase failed. Exiting...
+        echo "Git rebase failed. Exiting..."
         exit 1
     fi
 else
