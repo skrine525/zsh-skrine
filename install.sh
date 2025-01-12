@@ -22,7 +22,7 @@ if [ -d "$DEST_DIR" ]; then
     fi
 
     git fetch origin > /dev/null 2>&1
-    git reset --hard origin/dev > /dev/null 2>&1
+    git reset --hard origin/main > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
         echo "Updating failed. Exiting..."
