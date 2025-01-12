@@ -84,7 +84,7 @@ configure_prompt() {
 
             case "$PROMPT_EXTRA_MODE" in
                 git)
-                    RPROMPT="$(git_prompt_info)-"
+                    RPROMPT="$(git_prompt_info)"
                     ;;
             esac
             ;;
