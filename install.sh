@@ -16,7 +16,7 @@ fi
 if [ -d "$DEST_DIR" ]; then
     echo "Installing..."
 
-    cd "$DEST_DIR" || exit 1
+    cd "$DEST_DIR" || { echo "Directory $DEST_DIR not found, exiting..."; exit 1; }
     git fetch origin > /dev/null 2>&1
     git reset --hard origin/dev > /dev/null 2>&1
 
@@ -28,7 +28,7 @@ if [ -d "$DEST_DIR" ]; then
     ln -sf "$DEST_DIR/theme/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
     echo "Success. Restart your zsh."
 else
-    echo "Updating..."
+    echo "Cloning..."
 
     git clone "$REPO_URL" "$DEST_DIR" > /dev/null 2>&1
 
