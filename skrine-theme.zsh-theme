@@ -71,11 +71,9 @@ configure_prompt() {
         twoline)
             PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
             RPROMPT=
-            echo suka
 
             case "$PROMPT_EXTRA_MODE" in
                 git)
-                    echo test1
                     PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT] $(git_prompt_info)$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
                     ;;
             esac
@@ -86,7 +84,6 @@ configure_prompt() {
 
             case "$PROMPT_EXTRA_MODE" in
                 git)
-                    echo test1
                     RPROMPT="$(git_prompt_info)"
                     ;;
             esac
