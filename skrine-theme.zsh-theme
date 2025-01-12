@@ -1,23 +1,5 @@
 #!/bin/zsh
 
-#############################################################################
-#                                                                           #
-#                    KALI-LIKE THEME for Oh-My-Zsh                          #
-#                                                                           #
-#############################################################################
-#                                                                           #
-#  For better "kali-like" experience, use FiraCode font for your terminal   #
-#  and install zsh-syntax-highlighting and zsh-autosuggestions packages     #
-#                                                                           #
-#############################################################################
-#                                                                           #
-# CREDITS :                                                                 #
-# Some parts of this code was directly ripped from Kali Linux .zshrc        #
-#                                                                           #
-#############################################################################
-# (C) 2023 Cyril LAMY under the MIT License                                 #
-#############################################################################
-
 ##################################################
 ### OPTIONS
 
@@ -69,32 +51,13 @@ setopt hist_verify            # show command with history expansion to user befo
 TIMEFMT=$'\nreal\t%E\nuser\t%U\nsys\t%S\ncpu\t%P'
 
 ##################################################
-### CONFIGURE PROMPT EXTRA
+### CONFIGURE PROMPT
 
-configure_prompt_extra() {
+configure_prompt() {
     if [[ " ${plugins[@]} " =~ " git " ]]; then
         ZSH_THEME_GIT_PROMPT_PREFIX="%{$FG[067]%}["
         ZSH_THEME_GIT_PROMPT_SUFFIX="]%{$reset_color%}"
     fi
-
-    case "$PROMPT_EXTRA_MODE" in
-        git)
-            PROMPT_EXTRA=$(git_prompt_info)
-            ;;
-        *)
-            PROMPT_EXTRA=
-            ;;
-    esac
-}
-
-### END OF CONFIGURE PROMPT EXTRA
-##################################################
-
-##################################################
-### CONFIGURE PROMPT
-
-configure_prompt() {
-    configure_prompt_extra
 
     if [[ $UID == 0 || $EUID == 0 ]]; then
         FGPROMPT="$FG[196]"
@@ -106,16 +69,27 @@ configure_prompt() {
 
     case "$PROMPT_MODE" in
         twoline)
-            if [[ -n "$PROMPT_EXTRA" ]]; then
-                PROMPT_EXTRA=" $PROMPT_EXTRA"
-            fi
-
-            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]$PROMPT_EXTRA$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
             RPROMPT=
+            echo suka
+
+            case "$PROMPT_EXTRA_MODE" in
+                git)
+                    echo test1
+                    PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT] $(git_prompt_info)$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+                    ;;
+            esac
             ;;
         oneline)
             PROMPT=$'%B$FGPROMPT%n@%m%b%F{reset}:%B$CYANPROMPT%~%b%F{reset}%(#.#.$) '
-            RPROMPT="$PROMPT_EXTRA"
+            RPROMPT=
+
+            case "$PROMPT_EXTRA_MODE" in
+                git)
+                    echo test1
+                    RPROMPT="$(git_prompt_info)"
+                    ;;
+            esac
             ;;
     esac
 }
