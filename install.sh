@@ -8,6 +8,7 @@ if [ ! -d "$HOME/.oh-my-zsh" ]; then
     exit 1
 fi
 
+echo test
 if [ ! -d "$HOME/.zsh" ]; then
     echo "Creating .zsh directory..."
     mkdir -p "$HOME/.zsh"
