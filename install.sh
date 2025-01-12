@@ -14,14 +14,18 @@ if [ ! -d "$HOME/.zsh" ]; then
 fi
 
 if [ -d "$DEST_DIR" ]; then
-    echo "Installing..."
+    echo "Updating..."
 
-    cd "$DEST_DIR" || { echo "Directory $DEST_DIR not found, exiting..."; exit 1; }
+    if ! cd "$DEST_DIR"; then
+        echo "Failed to change directory to $DEST_DIR. Exiting..."
+        exit 1
+    fi
+
     git fetch origin > /dev/null 2>&1
     git reset --hard origin/dev > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
-        echo "Installing failed. Exiting..."
+        echo "Git reset failed. Exiting..."
         exit 1
     fi
 
@@ -33,7 +37,7 @@ else
     git clone "$REPO_URL" "$DEST_DIR" > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
-        echo "Updating failed. Exiting..."
+        echo "Git clone failed. Exiting..."
         exit 1
     fi
 
