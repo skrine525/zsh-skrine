@@ -1,7 +1,18 @@
 #!/bin/zsh
 
 REPO_URL="https://github.com/skrine525/zsh-skrine"
-DEST_DIR="$HOME/.zsh-skrine"
+DEST_DIR="$HOME/.zsh/zsh-skrine"
+OH_MY_ZSH_DIR="$HOME/.oh-my-zsh"
+
+if [ ! -d "$OH_MY_ZSH_DIR" ]; then
+    echo "Oh My Zsh is not installed. Please install it first."
+    exit 1
+fi
+
+if [ ! -d "$HOME/.zsh" ]; then
+    echo "Creating .zsh directory..."
+    mkdir -p "$HOME/.zsh"
+fi
 
 if [ -d "$DEST_DIR" ]; then
     echo "Updating..."
@@ -18,8 +29,8 @@ if [ -d "$DEST_DIR" ]; then
     ln -sf "$DEST_DIR/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
     echo "Success. Restart your zsh."
 else
-    echo "Clonning..."
-    
+    echo "Cloning..."
+
     git clone "$REPO_URL" "$DEST_DIR" > /dev/null 2>&1
 
     if [ $? -ne 0 ]; then
