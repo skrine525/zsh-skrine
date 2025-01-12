@@ -2,9 +2,8 @@
 
 REPO_URL="https://github.com/skrine525/zsh-skrine"
 DEST_DIR="$HOME/.zsh/zsh-skrine"
-OH_MY_ZSH_DIR="$HOME/.oh-my-zsh"
 
-if [ ! -d "$OH_MY_ZSH_DIR" ]; then
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
     echo "Oh My Zsh is not installed. Please install it first."
     exit 1
 fi
