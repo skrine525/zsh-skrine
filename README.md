@@ -1,142 +1,144 @@
 # nitroshell
 
-Тема для [Oh My Zsh](https://ohmyz.sh/) в стиле Kali Linux: двухстрочный промпт, подсветка синтаксиса, автоподсказки и удобные горячие клавиши.
+A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, syntax highlighting, autosuggestions and handy key bindings.
 
 ```
 ┌───(user@host)-[~/projects/myapp]
 └─$
 ```
 
-## Содержание
+## Contents
 
-- [Возможности](#возможности)
-- [Требования](#требования)
-- [Установка](#установка)
-- [Обновление](#обновление)
-- [Настройка](#настройка)
-- [Горячие клавиши](#горячие-клавиши)
-- [Удаление](#удаление)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Updating](#updating)
+- [Configuration](#configuration)
+- [Key bindings](#key-bindings)
+- [Uninstalling](#uninstalling)
+- [License](#license)
 
-## Возможности
+## Features
 
-- **Два режима промпта**: двухстрочный в стиле Kali (по умолчанию) и однострочный `user@host:~/путь$`.
-- **Git в промпте**: ветка и статус репозитория (включается отдельно).
-- **Индикатор прокси**: если в окружении задан `https_proxy`, `http_proxy` или `all_proxy`, в промпте появляется `[proxy host:port]` (логин и пароль скрываются).
-- **Root** выделяется красным цветом, в конце стоит `#` вместо `$`.
-- **Сокращение длинных путей**: при глубине 6 и больше показываются первый каталог, `…` и последние 4.
-- **Подсветка синтаксиса** ([zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)) в собственной цветовой схеме.
-- **Автоподсказки** ([zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)) по истории и автодополнению.
-- **Автоустановка плагинов**: если плагинов нет в системе, они скачиваются в `~/.zsh/`.
-- **Цветной вывод** `ls`, `grep`, `diff`, `ip`, `pacman`, `less` и списков дополнения по Tab.
-- **Удобная оболочка**: `cd` по одному имени каталога, общая история между сессиями, сортировка файлов с учётом чисел, комментарии `#` в интерактивном режиме.
-- **Алиасы**: `ll`, `la`, `l`, `dc` (`docker compose`), `history` (полная история), `update-theme`.
+- **Two prompt modes**: a two-line Kali style prompt (default) and a one-line `user@host:~/path$`.
+- **Git in the prompt**: branch and repository status (off by default).
+- **Proxy indicator**: when `https_proxy`, `http_proxy` or `all_proxy` is set in the environment, the prompt shows `[proxy host:port]` (the login and password are hidden).
+- **Python virtualenv** name next to the path, without breaking the prompt frame.
+- **Root** is highlighted in red and gets `#` instead of `$`.
+- **Shortened long paths**: from 6 levels deep, the first directory, `…` and the last 4 are shown.
+- **Syntax highlighting** ([zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)) with its own color scheme.
+- **Autosuggestions** ([zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)) based on history and completion.
+- **Automatic plugin installation**: plugins that are not found on the system are downloaded to `~/.zsh/`.
+- **Colored output** of `ls`, `grep`, `diff`, `ip`, `pacman`, `less` and Tab completion lists.
+- **Shell conveniences**: `cd` by directory name alone, history shared between sessions, numeric file sorting, `#` comments in interactive mode.
+- **Aliases**: `ll`, `la`, `l`, `dc` (`docker compose`), `history` (full history), `update-theme`.
 
-## Требования
+## Requirements
 
 - **Zsh**
 - **Oh My Zsh**
-- **git** — для установки темы и автоскачивания плагинов
-- **curl** — для установки, **wget** — для команды `update-theme`
+- **git**: to install the theme and download plugins
+- **curl** to install, **wget** for the `update-theme` command
 
-## Установка
+## Installation
 
-1. Установите Oh My Zsh (если он ещё не установлен):
+1. Install Oh My Zsh (if it is not installed yet):
 
     ```bash
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     ```
 
-2. Установите `nitroshell`:
+2. Install `nitroshell`:
 
     ```bash
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/skrine525/nitroshell/refs/heads/main/install.sh)"
     ```
 
-    Скрипт:
-    - проверяет зависимости (zsh, git, Oh My Zsh) и, если чего-то не хватает, сообщает, что установить;
-    - клонирует репозиторий в `~/.zsh/nitroshell` и подключает тему симлинком в `~/.oh-my-zsh/custom/themes/`;
-    - прописывает `ZSH_THEME="nitroshell"` в `~/.zshrc` (перед этим сохраняет копию в `~/.zshrc.pre-nitroshell`).
+    The script:
+    - checks the dependencies (zsh, git, Oh My Zsh) and tells you what to install if something is missing;
+    - clones the repository to `~/.zsh/nitroshell` and links the theme into `~/.oh-my-zsh/custom/themes/`;
+    - sets `ZSH_THEME="nitroshell"` in `~/.zshrc` (a copy of the original is saved to `~/.zshrc.pre-nitroshell` first).
 
-3. Чтобы показывать git-информацию в промпте, включите плагин `git` в `~/.zshrc`:
+3. To show git information in the prompt, enable the `git` plugin in `~/.zshrc`:
 
     ```bash
     plugins=(git)
     ```
 
-4. Перезапустите оболочку:
+4. Restart the shell:
 
     ```bash
     exec zsh
     ```
 
-## Обновление
+## Updating
 
 ```bash
 update-theme
 ```
 
-> Пользовательские настройки хранятся в `config.zsh`, который не отслеживается git, поэтому обновление их не затрагивает.
+> User settings are stored in `config.zsh`, which git does not track, so updating does not affect them.
 
-## Настройка
+## Configuration
 
-Настройки хранятся в файле `~/.zsh/nitroshell/config.zsh`. Он создаётся автоматически при первом запуске, не попадает в git и не затрагивается обновлением. Если в новой версии темы появляются новые опции, они сами добавляются в файл со значениями по умолчанию.
+Settings are stored in `~/.zsh/nitroshell/config.zsh`. The file is created automatically on the first start, is ignored by git and is not touched by updates. When a new version of the theme adds options, they are appended to the file with their default values.
 
-Другой путь можно задать переменной `NITROSHELL_CONFIG_FILE` в `~/.zshrc` (до загрузки Oh My Zsh).
+A different path can be set with the `NITROSHELL_CONFIG_FILE` variable in `~/.zshrc` (before Oh My Zsh is loaded).
 
-| Опция | Значения | По умолчанию | Описание |
+| Option | Values | Default | Description |
 |---|---|---|---|
-| `USE_SYNTAX_HIGHLIGHTING` | `yes` / `no` | `yes` | Подсветка синтаксиса |
-| `AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN` | `yes` / `no` | `yes` | Скачивать плагин подсветки, если его нет |
-| `USE_ZSH_AUTOSUGGESTIONS` | `yes` / `no` | `yes` | Автоподсказки |
-| `AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN` | `yes` / `no` | `yes` | Скачивать плагин подсказок, если его нет |
-| `PROMPT_MODE` | `twoline` / `oneline` | `twoline` | Режим промпта |
-| `NEWLINE_BEFORE_PROMPT` | `yes` / `no` | `yes` | Пустая строка перед каждым промптом (кроме первого) |
-| `SHOW_GIT` | `yes` / `no` | `no` | Показывать git (ветка и статус) в промпте |
-| `SHOW_PROXY` | `yes` / `no` | `yes` | Показывать в промпте, что в шеле задан прокси |
-| `SHOW_VENV` | `yes` / `no` | `yes` | Показывать активное Python-окружение (venv) |
-| `REQUIRE_PROXY_FOR` | команды через пробел | пусто | Команды, которые не запускаются, пока в шеле не задан прокси |
+| `USE_SYNTAX_HIGHLIGHTING` | `yes` / `no` | `yes` | Syntax highlighting |
+| `AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN` | `yes` / `no` | `yes` | Download the highlighting plugin if it is missing |
+| `USE_ZSH_AUTOSUGGESTIONS` | `yes` / `no` | `yes` | Autosuggestions |
+| `AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN` | `yes` / `no` | `yes` | Download the suggestions plugin if it is missing |
+| `PROMPT_MODE` | `twoline` / `oneline` | `twoline` | Prompt mode |
+| `NEWLINE_BEFORE_PROMPT` | `yes` / `no` | `yes` | Empty line before every prompt except the first one |
+| `SHOW_GIT` | `yes` / `no` | `no` | Show git (branch and status) in the prompt |
+| `SHOW_PROXY` | `yes` / `no` | `yes` | Show in the prompt that a proxy is set in the shell |
+| `SHOW_VENV` | `yes` / `no` | `yes` | Show the active Python virtualenv |
+| `REQUIRE_PROXY_FOR` | space-separated commands | empty | Commands that refuse to start until a proxy is set in the shell |
 
-Пример: запретить запуск `claude` и `codex` без прокси:
+Example: forbid running `claude` and `codex` without a proxy:
 
 ```bash
 REQUIRE_PROXY_FOR="claude codex"
 ```
 
-Проверяется только наличие переменной прокси в окружении, а не его работоспособность. Защита действует только для запуска из интерактивного zsh: `command claude`, полный путь, скрипты и IDE её обходят.
+Only the presence of a proxy variable in the environment is checked, not whether the proxy works. The protection applies only to commands started from an interactive zsh: `command claude`, a full path, scripts and IDEs bypass it.
 
-Режим промпта (`Ctrl+P`) и то, что показывать (`Ctrl+O`), автоматически записывается в `config.zsh`, поэтому выбор сохраняется между сессиями.
+The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`) are written to `config.zsh` automatically, so your choice is kept between sessions.
 
-## Горячие клавиши
+## Key bindings
 
-| Клавиша | Действие |
+| Key | Action |
 |---|---|
-| `Ctrl+P` | Переключить режим промпта: одна строка или две |
-| `Ctrl+O` | Меню настройки промпта: что показывать (git, прокси, Python venv) |
-| `Ctrl+←` / `Ctrl+→` | Перейти на слово назад или вперёд |
-| `Ctrl+Del` | Удалить слово вперёд |
-| `Ctrl+U` | Удалить всё до начала строки |
-| `Home` / `End` | Начало и конец строки |
-| `Delete` | Удалить символ под курсором |
-| `PgUp` / `PgDn` | Начало и конец истории |
-| `Shift+Tab` | Отменить последнее действие |
-| `Space` | Раскрыть историю (`!!` и т. п.) прямо при вводе |
+| `Ctrl+P` | Switch the prompt mode: one line or two |
+| `Ctrl+O` | Prompt settings menu: choose what to show (git, proxy, Python venv) |
+| `Ctrl+←` / `Ctrl+→` | Move one word back or forward |
+| `Ctrl+Del` | Delete the next word |
+| `Ctrl+U` | Delete everything up to the beginning of the line |
+| `Home` / `End` | Beginning and end of the line |
+| `Delete` | Delete the character under the cursor |
+| `PgUp` / `PgDn` | Beginning and end of the history |
+| `Shift+Tab` | Undo the last action |
+| `Space` | Expand history (`!!` and the like) as you type |
 
-## Удаление
+## Uninstalling
 
-1. Верните прежнюю тему в `~/.zshrc` (например, `ZSH_THEME="robbyrussell"`).
-2. Удалите тему и репозиторий:
+1. Switch back to your previous theme in `~/.zshrc` (for example, `ZSH_THEME="robbyrussell"`). The original file is saved as `~/.zshrc.pre-nitroshell`.
+2. Remove the theme and the repository:
 
     ```bash
     rm ~/.oh-my-zsh/custom/themes/nitroshell.zsh-theme
     rm -rf ~/.zsh/nitroshell
     ```
 
-3. При желании удалите автоскачанные плагины:
+3. Optionally, remove the automatically downloaded plugins:
 
     ```bash
     rm -rf ~/.zsh/zsh-syntax-highlighting ~/.zsh/zsh-autosuggestions
     ```
 
-## Лицензия
+## License
 
 [MIT](LICENSE)
