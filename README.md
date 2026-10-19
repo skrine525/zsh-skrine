@@ -15,6 +15,7 @@ A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, 
 - [Updating](#updating)
 - [Configuration](#configuration)
 - [Key bindings](#key-bindings)
+- [Project structure](#project-structure)
 - [Uninstalling](#uninstalling)
 - [License](#license)
 
@@ -111,14 +112,14 @@ REQUIRE_PROXY_FOR="claude codex"
 
 Only the presence of a proxy variable in the environment is checked, not whether the proxy works. The protection applies only to commands started from an interactive zsh: `command claude`, a full path, scripts and IDEs bypass it.
 
-The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`, first menu item **Prompt display**) are written to `config/config.zsh` automatically, so your choice is kept between sessions.
+The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`, **Settings** → **Prompt display**) are written to `config/config.zsh` automatically, so your choice is kept between sessions.
 
 ## Key bindings
 
 | Key | Action |
 |---|---|
 | `Ctrl+P` | Switch the prompt mode: one line or two |
-| `Ctrl+O` | Open the nitroshell menu: prompt display (git, proxy, Python venv), settings, update |
+| `Ctrl+O` | Open the nitroshell menu: settings (prompt display: git, proxy, Python venv; proxy commands) and update |
 | `Ctrl+←` / `Ctrl+→` | Move one word back or forward |
 | `Ctrl+Del` | Delete the next word |
 | `Ctrl+U` | Delete everything up to the beginning of the line |
@@ -127,6 +128,17 @@ The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`, first menu
 | `PgUp` / `PgDn` | Beginning and end of the history |
 | `Shift+Tab` | Undo the last action |
 | `Space` | Expand history (`!!` and the like) as you type |
+
+## Project structure
+
+```
+nitroshell.zsh-theme   # entry point: loads the modules from lib/
+lib/                   # modules: options, shell, proxy, prompt, plugins, environment,
+                       #          menu, settings, command, aliases
+config/config.zsh      # your settings (created on first start, ignored by git)
+install.sh             # installer and updater
+VERSION                # current version
+```
 
 ## Uninstalling
 
