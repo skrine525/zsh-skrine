@@ -10,15 +10,20 @@ NITROSHELL_DIR=${0:A:h:h}
 NITROSHELL_VERSION=unknown
 [[ -f "$NITROSHELL_DIR/VERSION" ]] && NITROSHELL_VERSION=$(<"$NITROSHELL_DIR/VERSION")
 
-# user options live in config.zsh (in the repository root, ignored by git)
-NITROSHELL_CONFIG_FILE=${NITROSHELL_CONFIG_FILE:-$NITROSHELL_DIR/config.zsh}
+# user options live in config/config.zsh (in the repository root, ignored by git)
+NITROSHELL_CONFIG_FILE=${NITROSHELL_CONFIG_FILE:-$NITROSHELL_DIR/config/config.zsh}
+
+# the config used to live in the repository root
+if [[ ! -f "$NITROSHELL_CONFIG_FILE" && -f "$NITROSHELL_DIR/config.zsh" ]]; then
+    mkdir -p "${NITROSHELL_CONFIG_FILE:h}" && mv "$NITROSHELL_DIR/config.zsh" "$NITROSHELL_CONFIG_FILE"
+fi
 
 [[ -f "$NITROSHELL_CONFIG_FILE" ]] && . "$NITROSHELL_CONFIG_FILE"
 
 # migrate the old PROMPT_EXTRA_MODE option
 [[ -z "$SHOW_GIT" && "$PROMPT_EXTRA_MODE" = git ]] && SHOW_GIT=yes
 
-# defaults for everything config.zsh did not set
+# defaults for everything the config file did not set
 : ${USE_SYNTAX_HIGHLIGHTING:=yes}
 : ${AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN:=yes}
 
@@ -56,6 +61,7 @@ save_option() {
 
     [[ $found = no ]] && out+=("$name=$value")
 
+    mkdir -p "${NITROSHELL_CONFIG_FILE:h}"
     print -rl -- "${out[@]}" > "$NITROSHELL_CONFIG_FILE"
 }
 
@@ -354,7 +360,7 @@ bindkey ^P toggle_prompt_mode
 ##################################################
 
 ##################################################
-### PROMPT SETTINGS MENU
+### NITROSHELL MENU KEY (Ctrl+O)
 
 # toggle_option NAME: flip a yes/no option and persist it
 toggle_option() {
@@ -367,58 +373,19 @@ toggle_option() {
     save_option $1 ${(P)1}
 }
 
-# interactive menu (Ctrl+O): choose what is shown in the prompt
-prompt_settings() {
-    local key mark_git mark_proxy mark_venv
-
-    while true; do
-        [[ "$SHOW_GIT" = yes ]] && mark_git=x || mark_git=' '
-        [[ "$SHOW_PROXY" = yes ]] && mark_proxy=x || mark_proxy=' '
-        [[ "$SHOW_VENV" = yes ]] && mark_venv=x || mark_venv=' '
-
-        zle -M "Show in prompt:
-  1) [$mark_git] git
-  2) [$mark_proxy] proxy
-  3) [$mark_venv] python venv
-1-3 toggle, any other key closes"
-        zle -R  # flush the message now, otherwise it shows only after the next key
-        read -srk1 key
-
-        case "$key" in
-            1)
-                toggle_option SHOW_GIT
-                # oh-my-zsh computes git info asynchronously and registers the handler only if
-                # git_prompt_info was in the prompt at startup; register it for a live toggle
-                if (( $+functions[_omz_register_handler] )); then
-                    _omz_register_handler _omz_git_prompt_info
-                    # start the first request now; the prompt is redrawn when it finishes
-                    (( $+functions[_omz_async_request] )) && _omz_async_request
-                fi
-                ;;
-            2)
-                toggle_option SHOW_PROXY
-                update_proxy_info
-                ;;
-            3) toggle_option SHOW_VENV ;;
-            *)
-                # swallow the rest of an escape sequence (arrow keys etc.)
-                [[ "$key" = $'\e' ]] && while read -srk1 -t 0.05 key; do :; done
-                break
-                ;;
-        esac
-
-        configure_prompt
-        zle reset-prompt
-    done
-
-    zle -M ""
-    zle -R
+# Ctrl+O: open the nitroshell menu right below the prompt
+nitroshell_widget() {
+    print                  # step below the prompt line; the menu draws there and erases itself
+    nitroshell_menu
+    print -n '\e[1A'       # back to the line of the prompt
+    configure_prompt
+    zle reset-prompt
 }
 
-zle -N prompt_settings
-bindkey ^O prompt_settings
+zle -N nitroshell_widget
+bindkey ^O nitroshell_widget
 
-### END OF PROMPT SETTINGS MENU
+### END OF NITROSHELL MENU KEY
 ##################################################
 
 # enable color support of ls, less and man, and also add handy aliases
@@ -510,7 +477,7 @@ nitroshell_select() {
                     ;;
                 k) (( cur = cur > 1 ? cur - 1 : count )) ;;
                 j) (( cur = cur < count ? cur + 1 : 1 )) ;;
-                $'\n'|$'\r') NITROSHELL_KEY=enter; break ;;
+                $'\n'|$'\r'|' ') NITROSHELL_KEY=enter; break ;;
                 d|$'\x7f') NITROSHELL_KEY=delete; break ;;
                 q) NITROSHELL_KEY=quit; break ;;
             esac
@@ -581,6 +548,46 @@ nitroshell_config_proxy() {
         REQUIRE_PROXY_FOR="${cmds[*]}"
         save_option REQUIRE_PROXY_FOR "$REQUIRE_PROXY_FOR"
         apply_proxy_requirements
+    done
+}
+
+# nitroshell_config_prompt: choose what is shown in the prompt
+nitroshell_config_prompt() {
+    local i start=1
+    local -a opts=(SHOW_GIT SHOW_PROXY SHOW_VENV) labels=(git proxy "python venv") items
+
+    while true; do
+        items=()
+        for i in {1..${#opts}}; do
+            if [[ "${(P)opts[i]}" = yes ]]; then
+                items+=("[x] ${labels[i]}")
+            else
+                items+=("[ ] ${labels[i]}")
+            fi
+        done
+
+        NITROSHELL_SELECT_START=$start
+        nitroshell_select "Show in the prompt" "↑/↓ move  Enter/Space toggle  q back" "${items[@]}"
+        start=$REPLY
+
+        [[ "$NITROSHELL_KEY" = enter ]] || break
+
+        toggle_option ${opts[REPLY]}
+
+        case "${opts[REPLY]}" in
+            SHOW_GIT)
+                # oh-my-zsh computes git info asynchronously and registers the handler only if
+                # git_prompt_info was in the prompt at startup; register it for a live toggle
+                if (( $+functions[_omz_register_handler] )); then
+                    _omz_register_handler _omz_git_prompt_info
+                    # start the first request now; the prompt is redrawn when it finishes
+                    (( $+functions[_omz_async_request] )) && _omz_async_request
+                fi
+                ;;
+            SHOW_PROXY)
+                update_proxy_info
+                ;;
+        esac
     done
 }
 
@@ -675,14 +682,15 @@ nitroshell_menu() {
 
     while true; do
         NITROSHELL_SELECT_START=$start
-        nitroshell_select "nitroshell $NITROSHELL_VERSION" "↑/↓ move  Enter select  q quit" "Settings" "Update"
+        nitroshell_select "nitroshell $NITROSHELL_VERSION" "↑/↓ move  Enter select  q quit" "Prompt display" "Settings" "Update"
         start=$REPLY
 
         [[ "$NITROSHELL_KEY" = enter ]] || break
 
         case "$REPLY" in
-            1) nitroshell_config ;;
-            2) nitroshell_update; break ;;
+            1) nitroshell_config_prompt ;;
+            2) nitroshell_config ;;
+            3) nitroshell_update; break ;;
         esac
     done
 }

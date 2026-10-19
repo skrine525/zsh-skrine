@@ -82,11 +82,11 @@ nitroshell update
 
 The update resets the installation to the latest `main`, so it refuses to run if the repository has local changes or is on another branch. `nitroshell version` shows the installed version.
 
-> User settings are stored in `config.zsh`, which git does not track, so updating does not affect them.
+> User settings are stored in `config/config.zsh`, which git does not track, so updating does not affect them.
 
 ## Configuration
 
-Settings are stored in `~/.zsh/nitroshell/config.zsh`. The file is created automatically on the first start, is ignored by git and is not touched by updates. When a new version of the theme adds options, they are appended to the file with their default values.
+Settings are stored in `~/.zsh/nitroshell/config/config.zsh`. The file is created automatically on the first start, is ignored by git and is not touched by updates. When a new version of the theme adds options, they are appended to the file with their default values.
 
 A different path can be set with the `NITROSHELL_CONFIG_FILE` variable in `~/.zshrc` (before Oh My Zsh is loaded).
 
@@ -111,14 +111,14 @@ REQUIRE_PROXY_FOR="claude codex"
 
 Only the presence of a proxy variable in the environment is checked, not whether the proxy works. The protection applies only to commands started from an interactive zsh: `command claude`, a full path, scripts and IDEs bypass it.
 
-The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`) are written to `config.zsh` automatically, so your choice is kept between sessions.
+The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`, first menu item **Prompt display**) are written to `config/config.zsh` automatically, so your choice is kept between sessions.
 
 ## Key bindings
 
 | Key | Action |
 |---|---|
 | `Ctrl+P` | Switch the prompt mode: one line or two |
-| `Ctrl+O` | Prompt settings menu: choose what to show (git, proxy, Python venv) |
+| `Ctrl+O` | Open the nitroshell menu: prompt display (git, proxy, Python venv), settings, update |
 | `Ctrl+←` / `Ctrl+→` | Move one word back or forward |
 | `Ctrl+Del` | Delete the next word |
 | `Ctrl+U` | Delete everything up to the beginning of the line |

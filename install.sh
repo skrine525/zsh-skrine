@@ -45,7 +45,7 @@ if [ -d "$DEST_DIR" ]; then
         exit 1
     fi
 
-    # config.zsh is ignored by git, so the reset does not touch user settings
+    # config/ is ignored by git, so the reset does not touch user settings
     if ! git fetch origin > /dev/null 2>&1 || ! git reset --hard origin/main > /dev/null 2>&1; then
         echo "Updating failed. Exiting..."
         exit 1
