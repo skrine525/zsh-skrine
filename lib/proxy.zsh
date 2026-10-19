@@ -155,23 +155,46 @@ if [[ -n "$https_proxy$http_proxy$all_proxy" ]]; then
     unset url
 fi
 
+# nitroshell_zle_error MESSAGE: show an error below the prompt until the next key. zle -M does
+# not render colors, so it shows the text and the line is then repainted in red.
+nitroshell_zle_error() {
+    local msg="✗ $1"
+    zle -M "$msg"
+    zle -R
+    print -n $'\e7\e[1B\r\e[2K\e[1;31m'"$msg"$'\e[0m\e8' > /dev/tty
+}
+
 proxy_widget() {
     if toggle_proxy; then
         zle reset-prompt
         proxy_state
         zle -M "nitroshell: proxy $REPLY"
     else
-        # zle -M shows the message below the prompt and clears it on the next key, but does not
-        # render colors: show it, then repaint that line in red
-        local msg="✗ nitroshell: no proxy addresses set; press Ctrl+O and choose Proxy"
-        zle -M "$msg"
-        zle -R
-        print -n $'\e7\e[1B\r\e[2K\e[1;31m'"$msg"$'\e[0m\e8' > /dev/tty
+        nitroshell_zle_error "nitroshell: no proxy addresses set; press Ctrl+O and choose Proxy"
     fi
 }
 
 zle -N proxy_widget
 bindkey ^P proxy_widget
+
+# Enter: a command from REQUIRE_PROXY_FOR is not run without a proxy; the line stays in the
+# editor and a warning is shown. (The wrapper functions still guard scripts and later commands.)
+nitroshell_accept_line() {
+    local -a words=(${(z)BUFFER})
+    local cmd=$words[1]
+
+    if [[ -n "$cmd" ]] && (( ${NITROSHELL_WRAPPED[(Ie)$cmd]} )); then
+        get_proxy_url
+        if [[ -z "$REPLY" ]]; then
+            nitroshell_zle_error "$cmd: proxy is not set in the shell, refusing to start"
+            return
+        fi
+    fi
+
+    zle .accept-line
+}
+
+zle -N accept-line nitroshell_accept_line
 
 ### END OF PROXY SWITCH
 ##################################################
