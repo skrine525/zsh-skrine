@@ -456,7 +456,7 @@ fi
 ### ALIASES
 
 # update-theme
-alias update-theme="wget --no-cache -qO - https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/main/install.sh | sh"
+alias update-theme="wget --no-cache -qO - https://raw.githubusercontent.com/skrine525/nitroshell/refs/heads/main/install.sh | sh"
 
 # force zsh to show the complete history
 alias history="history 0"

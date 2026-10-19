@@ -8,10 +8,10 @@
 - [ ] Плагины подключаются несколькими `if` подряд, а не `elif`: при наличии в нескольких путях загрузятся дважды (syntax-highlighting и autosuggestions)
 - [ ] Сообщение `git not found` для syntax-highlighting стоит не в той ветке (после клонирования, а не при проверке git)
 - [ ] Разная `ZSH_AUTOSUGGEST_STRATEGY` у автоскачанного плагина (`completion`) и у остальных (`completion history`)
-- [ ] `install.sh`: ошибка `git fetch` не проверяется, `reset --hard` стирает локальные правки
-- [ ] `install.sh`: не создаётся `~/.oh-my-zsh/custom/themes/`, если каталога нет
-- [ ] `update-theme` запускает скрипт через `| sh`, хотя шебанг `zsh`
-- [ ] README: опечатка в URL установки (`main//install.sh`)
+- [x] `install.sh`: ошибка `git fetch` не проверяется, `reset --hard` стирает локальные правки
+- [x] `install.sh`: не создаётся `~/.oh-my-zsh/custom/themes/`, если каталога нет
+- [x] `update-theme` запускает скрипт через `| sh`, хотя шебанг `zsh`
+- [x] README: опечатка в URL установки (`main//install.sh`)
 - [ ] `NEWLINE_BEFORE_PROMPT` объявлена, но не используется
 
 ## Улучшения

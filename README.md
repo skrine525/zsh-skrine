@@ -3,7 +3,7 @@
 Тема для [Oh My Zsh](https://ohmyz.sh/) в стиле Kali Linux: двухстрочный промпт, подсветка синтаксиса, автоподсказки и удобные горячие клавиши.
 
 ```
-┌───(user@host)-[~/projects/zsh-skrine]
+┌───(user@host)-[~/projects/myapp]
 └─$
 ```
 
@@ -49,24 +49,21 @@
 2. Установите `nitroshell`:
 
     ```bash
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/main/install.sh)"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/skrine525/nitroshell/refs/heads/main/install.sh)"
     ```
 
-    Репозиторий клонируется в `~/.zsh/zsh-skrine`, а тема подключается симлинком в `~/.oh-my-zsh/custom/themes/`.
+    Скрипт:
+    - проверяет зависимости (zsh, git, Oh My Zsh) и, если чего-то не хватает, сообщает, что установить;
+    - клонирует репозиторий в `~/.zsh/nitroshell` и подключает тему симлинком в `~/.oh-my-zsh/custom/themes/`;
+    - прописывает `ZSH_THEME="nitroshell"` в `~/.zshrc` (перед этим сохраняет копию в `~/.zshrc.pre-nitroshell`).
 
-3. Укажите тему в `~/.zshrc`:
-
-    ```bash
-    ZSH_THEME="nitroshell"
-    ```
-
-4. Чтобы показывать git-информацию в промпте, включите плагин `git` в `~/.zshrc`:
+3. Чтобы показывать git-информацию в промпте, включите плагин `git` в `~/.zshrc`:
 
     ```bash
     plugins=(git)
     ```
 
-5. Перезапустите оболочку:
+4. Перезапустите оболочку:
 
     ```bash
     exec zsh
@@ -82,7 +79,7 @@ update-theme
 
 ## Настройка
 
-Настройки хранятся в файле `~/.zsh/zsh-skrine/config.zsh`. Он создаётся автоматически при первом запуске, не попадает в git и не затрагивается обновлением. Если в новой версии темы появляются новые опции, они сами добавляются в файл со значениями по умолчанию.
+Настройки хранятся в файле `~/.zsh/nitroshell/config.zsh`. Он создаётся автоматически при первом запуске, не попадает в git и не затрагивается обновлением. Если в новой версии темы появляются новые опции, они сами добавляются в файл со значениями по умолчанию.
 
 Другой путь можно задать переменной `NITROSHELL_CONFIG_FILE` в `~/.zshrc` (до загрузки Oh My Zsh).
 
@@ -130,7 +127,7 @@ REQUIRE_PROXY_FOR="claude codex"
 
     ```bash
     rm ~/.oh-my-zsh/custom/themes/nitroshell.zsh-theme
-    rm -rf ~/.zsh/zsh-skrine
+    rm -rf ~/.zsh/nitroshell
     ```
 
 3. При желании удалите автоскачанные плагины:
