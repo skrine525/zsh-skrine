@@ -326,6 +326,7 @@ prompt_settings() {
   2) [$mark_proxy] proxy
   3) [$mark_venv] python venv
 1-3 toggle, any other key closes"
+        zle -R  # flush the message now, otherwise it shows only after the next key
         read -srk1 key
 
         case "$key" in
@@ -333,7 +334,11 @@ prompt_settings() {
                 toggle_option SHOW_GIT
                 # oh-my-zsh computes git info asynchronously and registers the handler only if
                 # git_prompt_info was in the prompt at startup; register it for a live toggle
-                (( $+functions[_omz_register_handler] )) && _omz_register_handler _omz_git_prompt_info
+                if (( $+functions[_omz_register_handler] )); then
+                    _omz_register_handler _omz_git_prompt_info
+                    # start the first request now; the prompt is redrawn when it finishes
+                    (( $+functions[_omz_async_request] )) && _omz_async_request
+                fi
                 ;;
             2)
                 toggle_option SHOW_PROXY
@@ -352,6 +357,7 @@ prompt_settings() {
     done
 
     zle -M ""
+    zle -R
 }
 
 zle -N prompt_settings
