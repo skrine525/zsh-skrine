@@ -52,7 +52,7 @@ save_option() {
 # add options missing from the config file, so new keys appear after an update
 for opt in USE_SYNTAX_HIGHLIGHTING AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN \
            USE_ZSH_AUTOSUGGESTIONS AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN \
-           PROMPT_MODE SHOW_GIT SHOW_PROXY SHOW_VENV REQUIRE_PROXY_FOR; do
+           PROMPT_MODE NEWLINE_BEFORE_PROMPT SHOW_GIT SHOW_PROXY SHOW_VENV REQUIRE_PROXY_FOR; do
     if [[ ! -f "$NITROSHELL_CONFIG_FILE" ]] || ! grep -q "^$opt=" "$NITROSHELL_CONFIG_FILE"; then
         save_option $opt ${(P)opt}
     fi
@@ -151,6 +151,20 @@ add-zsh-hook precmd update_proxy_info
 ##################################################
 
 ##################################################
+### NEWLINE BEFORE PROMPT
+
+# print an empty line before every prompt except the first one of the session
+newline_before_prompt() {
+    [[ "$NEWLINE_BEFORE_PROMPT" = yes && -n "$NITROSHELL_PROMPT_SHOWN" ]] && print
+    NITROSHELL_PROMPT_SHOWN=1
+}
+
+add-zsh-hook precmd newline_before_prompt
+
+### END OF NEWLINE BEFORE PROMPT
+##################################################
+
+##################################################
 ### CONFIGURE PROMPT
 
 configure_prompt() {
@@ -189,93 +203,99 @@ configure_prompt
 ### END OF CONFIGURE PROMPT
 ##################################################
 
-if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ]; then
+##################################################
+### PLUGINS
 
-    syntax_highlighting=no
+# find_plugin NAME DOWNLOAD: put the path of the plugin script into REPLY.
+# The plugin is cloned into ~/.zsh if it is not found and DOWNLOAD is yes.
+# It is sourced by the caller, because a plugin sourced from a function would
+# get its variables local to that function.
+find_plugin() {
+    local name=$1 download=$2 dir
 
-    # enable syntax-highlighting if avalaible
-
-    if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-        . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
-        syntax_highlighting=yes
-    fi
-
-    if [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-        . /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-        syntax_highlighting=yes
-    fi
-
-    if [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-        . /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-        syntax_highlighting=yes
-
-    fi
-
-    if [ "$syntax_highlighting" = no ]; then
-        if [ "$AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN" = yes ]; then
-            if whence -cp git &> /dev/null; then
-                mkdir ~/.zsh >/dev/null 2>&1
-                git clone --quiet https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.zsh/zsh-syntax-highlighting >/dev/null 2>&1
-                if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
-                    . ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
-                    syntax_highlighting=yes
-                else
-                    echo "git not found, plugin zsh_syntax_highlighting not installed"
-                fi
-            fi
+    for dir in ~/.zsh/$name /usr/share/$name /usr/share/zsh/plugins/$name; do
+        if [[ -f $dir/$name.zsh ]]; then
+            REPLY=$dir/$name.zsh
+            return 0
         fi
-    fi    
+    done
 
+    [[ "$download" = yes ]] || return 1
 
-    if [ "$syntax_highlighting" = yes ]; then
-    CL_CYAN="073"
-        ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
-        ZSH_HIGHLIGHT_STYLES[default]=none
-        ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=white,underline
-        ZSH_HIGHLIGHT_STYLES[reserved-word]=fg=cyan,bold
-        ZSH_HIGHLIGHT_STYLES[suffix-alias]=fg=$CL_CYAN,underline
-        ZSH_HIGHLIGHT_STYLES[global-alias]=fg=$CL_CYAN,bold
-        ZSH_HIGHLIGHT_STYLES[precommand]=fg=$CL_CYAN,underline
-        ZSH_HIGHLIGHT_STYLES[commandseparator]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[autodirectory]=fg=$CL_CYAN,underline
-        ZSH_HIGHLIGHT_STYLES[path]=fg=white,bold
-        ZSH_HIGHLIGHT_STYLES[path_pathseparator]=
-        ZSH_HIGHLIGHT_STYLES[path_prefix_pathseparator]=
-        ZSH_HIGHLIGHT_STYLES[globbing]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[history-expansion]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[command-substitution]=none
-        ZSH_HIGHLIGHT_STYLES[command-substitution-delimiter]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[process-substitution]=none
-        ZSH_HIGHLIGHT_STYLES[process-substitution-delimiter]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=fg=$CL_CYAN
-        ZSH_HIGHLIGHT_STYLES[double-hyphen-option]=fg=$CL_CYAN
-        ZSH_HIGHLIGHT_STYLES[back-quoted-argument]=none
-        ZSH_HIGHLIGHT_STYLES[back-quoted-argument-delimiter]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[single-quoted-argument]=fg=yellow
-        ZSH_HIGHLIGHT_STYLES[double-quoted-argument]=fg=yellow
-        ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]=fg=yellow
-        ZSH_HIGHLIGHT_STYLES[rc-quote]=fg=magenta
-        ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[back-dollar-quoted-argument]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[assign]=none
-        ZSH_HIGHLIGHT_STYLES[redirection]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[comment]=fg=black,bold
-        ZSH_HIGHLIGHT_STYLES[named-fd]=none
-        ZSH_HIGHLIGHT_STYLES[numeric-fd]=none
-        ZSH_HIGHLIGHT_STYLES[arg0]=fg=cyan
-        ZSH_HIGHLIGHT_STYLES[bracket-error]=fg=red,bold
-        ZSH_HIGHLIGHT_STYLES[bracket-level-1]=fg=blue,bold
-        ZSH_HIGHLIGHT_STYLES[bracket-level-2]=fg=$CL_CYAN,bold
-        ZSH_HIGHLIGHT_STYLES[bracket-level-3]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[bracket-level-4]=fg=yellow,bold
-        ZSH_HIGHLIGHT_STYLES[bracket-level-5]=fg=cyan,bold
-        ZSH_HIGHLIGHT_STYLES[cursor-matchingbracket]=standout
+    if ! whence -cp git &> /dev/null; then
+        echo "git not found, plugin $name not installed"
+        return 1
     fi
 
-    unset syntax_highlighting
+    mkdir -p ~/.zsh
+    git clone --quiet https://github.com/zsh-users/$name.git ~/.zsh/$name &> /dev/null
 
+    if [[ -f ~/.zsh/$name/$name.zsh ]]; then
+        REPLY=~/.zsh/$name/$name.zsh
+        return 0
+    fi
+
+    return 1
+}
+
+if [ "$USE_SYNTAX_HIGHLIGHTING" = yes ] && find_plugin zsh-syntax-highlighting "$AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN"; then
+    . "$REPLY"
+
+    CL_CYAN="073"
+    ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern)
+    ZSH_HIGHLIGHT_STYLES[default]=none
+    ZSH_HIGHLIGHT_STYLES[unknown-token]=fg=white,underline
+    ZSH_HIGHLIGHT_STYLES[reserved-word]=fg=cyan,bold
+    ZSH_HIGHLIGHT_STYLES[suffix-alias]=fg=$CL_CYAN,underline
+    ZSH_HIGHLIGHT_STYLES[global-alias]=fg=$CL_CYAN,bold
+    ZSH_HIGHLIGHT_STYLES[precommand]=fg=$CL_CYAN,underline
+    ZSH_HIGHLIGHT_STYLES[commandseparator]=fg=blue,bold
+    ZSH_HIGHLIGHT_STYLES[autodirectory]=fg=$CL_CYAN,underline
+    ZSH_HIGHLIGHT_STYLES[path]=fg=white,bold
+    ZSH_HIGHLIGHT_STYLES[path_pathseparator]=
+    ZSH_HIGHLIGHT_STYLES[path_prefix_pathseparator]=
+    ZSH_HIGHLIGHT_STYLES[globbing]=fg=blue,bold
+    ZSH_HIGHLIGHT_STYLES[history-expansion]=fg=blue,bold
+    ZSH_HIGHLIGHT_STYLES[command-substitution]=none
+    ZSH_HIGHLIGHT_STYLES[command-substitution-delimiter]=fg=magenta,bold
+    ZSH_HIGHLIGHT_STYLES[process-substitution]=none
+    ZSH_HIGHLIGHT_STYLES[process-substitution-delimiter]=fg=magenta,bold
+    ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=fg=$CL_CYAN
+    ZSH_HIGHLIGHT_STYLES[double-hyphen-option]=fg=$CL_CYAN
+    ZSH_HIGHLIGHT_STYLES[back-quoted-argument]=none
+    ZSH_HIGHLIGHT_STYLES[back-quoted-argument-delimiter]=fg=blue,bold
+    ZSH_HIGHLIGHT_STYLES[single-quoted-argument]=fg=yellow
+    ZSH_HIGHLIGHT_STYLES[double-quoted-argument]=fg=yellow
+    ZSH_HIGHLIGHT_STYLES[dollar-quoted-argument]=fg=yellow
+    ZSH_HIGHLIGHT_STYLES[rc-quote]=fg=magenta
+    ZSH_HIGHLIGHT_STYLES[dollar-double-quoted-argument]=fg=magenta,bold
+    ZSH_HIGHLIGHT_STYLES[back-double-quoted-argument]=fg=magenta,bold
+    ZSH_HIGHLIGHT_STYLES[back-dollar-quoted-argument]=fg=magenta,bold
+    ZSH_HIGHLIGHT_STYLES[assign]=none
+    ZSH_HIGHLIGHT_STYLES[redirection]=fg=blue,bold
+    ZSH_HIGHLIGHT_STYLES[comment]=fg=black,bold
+    ZSH_HIGHLIGHT_STYLES[named-fd]=none
+    ZSH_HIGHLIGHT_STYLES[numeric-fd]=none
+    ZSH_HIGHLIGHT_STYLES[arg0]=fg=cyan
+    ZSH_HIGHLIGHT_STYLES[bracket-error]=fg=red,bold
+    ZSH_HIGHLIGHT_STYLES[bracket-level-1]=fg=blue,bold
+    ZSH_HIGHLIGHT_STYLES[bracket-level-2]=fg=$CL_CYAN,bold
+    ZSH_HIGHLIGHT_STYLES[bracket-level-3]=fg=magenta,bold
+    ZSH_HIGHLIGHT_STYLES[bracket-level-4]=fg=yellow,bold
+    ZSH_HIGHLIGHT_STYLES[bracket-level-5]=fg=cyan,bold
+    ZSH_HIGHLIGHT_STYLES[cursor-matchingbracket]=standout
 fi
+
+if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ] && find_plugin zsh-autosuggestions "$AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN"; then
+    . "$REPLY"
+
+    # suggestions based on completion and history
+    ZSH_AUTOSUGGEST_STRATEGY=(completion history)
+    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
+fi
+
+### END OF PLUGINS
+##################################################
 
 ##################################################
 ### TOGGLE PROMPT MODE
@@ -366,7 +386,6 @@ bindkey ^O prompt_settings
 ### END OF PROMPT SETTINGS MENU
 ##################################################
 
-
 # enable color support of ls, less and man, and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
@@ -382,8 +401,7 @@ if [ -x /usr/bin/dircolors ]; then
     alias diff='diff --color=auto'
     alias ip='ip --color=auto'
 
-    alias pacman='pacman --color=auto' 
-    
+    alias pacman='pacman --color=auto'
 
     export LESS_TERMCAP_mb=$'\E[1;31m'     # begin blink
     export LESS_TERMCAP_md=$'\E[1;36m'     # begin bold
@@ -398,59 +416,10 @@ if [ -x /usr/bin/dircolors ]; then
     zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
 fi
 
-if [ "$USE_ZSH_AUTOSUGGESTIONS" = yes ]; then
-
-    zsh_autosuggestions=no
-
-    # enable auto-suggestions based on completion and  history
-    if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-        . ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-        # change suggestion color
-        ZSH_AUTOSUGGEST_STRATEGY=(completion history)
-        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
-        zsh_autosuggestions=yes
-    fi
-
-    if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-        . /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-        # change suggestion color
-        ZSH_AUTOSUGGEST_STRATEGY=(completion history)
-        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
-        zsh_autosuggestions=yes
-    fi
-
-    if [ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-        . /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 
-        # change suggestion color
-        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
-        ZSH_AUTOSUGGEST_STRATEGY=(completion history)
-        zsh_autosuggestions=yes
-    fi
-
-    if [ "$zsh_autosuggestions" = no ]; then
-        if [ "$AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN" = yes ]; then
-            if whence -cp git &> /dev/null; then
-                mkdir ~/.zsh >/dev/null 2>&1
-                git clone --quiet https://github.com/zsh-users/zsh-autosuggestions.git ~/.zsh/zsh-autosuggestions >/dev/null 2>&1
-                if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
-                    . ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh 
-                    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#555'
-                    ZSH_AUTOSUGGEST_STRATEGY=(completion)
-                    zsh_autosuggestions=yes
-                fi
-            else
-                echo "git not found, plugin zsh_autosuggestions not installed"
-            fi
-        fi
-    fi    
-fi
-
-
 # enable command-not-found if installed
 if [ -f /etc/zsh_command_not_found ]; then
     . /etc/zsh_command_not_found
 fi
-
 
 ##################################################
 ### ALIASES

@@ -90,6 +90,7 @@ update-theme
 | `USE_ZSH_AUTOSUGGESTIONS` | `yes` / `no` | `yes` | Автоподсказки |
 | `AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN` | `yes` / `no` | `yes` | Скачивать плагин подсказок, если его нет |
 | `PROMPT_MODE` | `twoline` / `oneline` | `twoline` | Режим промпта |
+| `NEWLINE_BEFORE_PROMPT` | `yes` / `no` | `yes` | Пустая строка перед каждым промптом (кроме первого) |
 | `SHOW_GIT` | `yes` / `no` | `no` | Показывать git (ветка и статус) в промпте |
 | `SHOW_PROXY` | `yes` / `no` | `yes` | Показывать в промпте, что в шеле задан прокси |
 | `SHOW_VENV` | `yes` / `no` | `yes` | Показывать активное Python-окружение (venv) |
@@ -135,3 +136,7 @@ REQUIRE_PROXY_FOR="claude codex"
     ```bash
     rm -rf ~/.zsh/zsh-syntax-highlighting ~/.zsh/zsh-autosuggestions
     ```
+
+## Лицензия
+
+[MIT](LICENSE)
