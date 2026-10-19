@@ -20,18 +20,24 @@ NITROSHELL_CONFIG_SECTIONS=(
 # section "address": the proxies that Ctrl+P and the main menu switch on and off
 nitroshell_config_address() {
     local kind var url name start=1 had=no
-    local -a kinds=(http https all) items
+    local -a kinds=(http https all) items labels values
 
     proxy_configured && had=yes
 
     while true; do
-        items=()
+        items=() labels=() values=()
         for kind in $kinds; do
-            mask_proxy ${(P)${:-PROXY_${(U)kind}}}
-            name=${(U)kind}_PROXY
-            items+=("${(r:11:)name} $REPLY")
+            var=PROXY_${(U)kind}
+            name=${(r:12:)${:-${(U)kind}_PROXY}}
+            mask_proxy ${(P)var}
+            items+=("$name$REPLY")
+            labels+=("$name")
+            values+=("${(P)var}")
         done
 
+        # Enter edits the highlighted address right in its row
+        NITROSHELL_EDIT_LABELS=("${labels[@]}")
+        NITROSHELL_EDIT_VALUES=("${values[@]}")
         NITROSHELL_SELECT_START=$start
         nitroshell_select "Proxy addresses" "↑/↓ move  Enter edit  d clear  q back" "${items[@]}"
         start=$REPLY
@@ -39,14 +45,8 @@ nitroshell_config_address() {
         case "$NITROSHELL_KEY" in
             quit) break ;;
             delete) url= ;;
-            enter)
-                kind=$kinds[REPLY]
-                mask_proxy ${(P)${:-PROXY_${(U)kind}}}
-                nitroshell_read "${(U)kind}_PROXY [$REPLY] (e.g. http://host:3128, - clears, Enter keeps): " || break
-                url=$REPLY
-                [[ -n "$url" ]] || continue
-                [[ "$url" = - ]] && url=
-                ;;
+            edit) url=${${NITROSHELL_EDIT_BUFFER## #}%% #} ;;
+            *) continue ;;
         esac
 
         var=PROXY_${(U)kinds[start]}
@@ -60,7 +60,6 @@ nitroshell_config_address() {
             PROXY_ENABLED=yes
         fi
         had=no; proxy_configured && had=yes
-        save_option PROXY_ENABLED "$PROXY_ENABLED"
         apply_proxy_state
         # clearing the last address leaves nothing configured: remove what was exported
         proxy_configured || unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY

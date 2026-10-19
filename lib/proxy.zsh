@@ -11,11 +11,11 @@ get_proxy_url() {
 # show a marker (without credentials) when a proxy is set in the shell environment
 update_proxy_info() {
     NITROSHELL_PROXY_INFO=
-    [[ "$SHOW_PROXY" = yes ]] || return
+    [[ "$SHOW_PROXY" = yes ]] || return 0
 
     get_proxy_url
     local proxy=$REPLY
-    [[ -n "$proxy" ]] || return
+    [[ -n "$proxy" ]] || return 0
 
     proxy=${proxy#*://}  # drop scheme
     proxy=${proxy##*@}   # drop credentials
@@ -93,20 +93,73 @@ apply_proxy_state() {
     update_proxy_info
 }
 
-# toggle_proxy: switch the configured proxy on or off and persist the choice
-toggle_proxy() {
-    proxy_configured || return 1
+# the six variables, and where the ones set outside nitroshell wait while the proxy is off
+NITROSHELL_PROXY_VARS=(http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY)
+typeset -gA NITROSHELL_STASHED_PROXY
 
-    toggle_option PROXY_ENABLED
-    apply_proxy_state
+# proxy_available: succeeds when there is something to switch: configured addresses,
+# a proxy set in the environment, or one that this shell switched off earlier
+proxy_available() {
+    proxy_configured && return
+    (( ${#NITROSHELL_STASHED_PROXY} )) && return
+    get_proxy_url
+    [[ -n "$REPLY" ]]
 }
 
-apply_proxy_state
+# proxy_state: put on or off into REPLY
+proxy_state() {
+    if proxy_configured; then
+        REPLY=${${PROXY_ENABLED:/yes/on}:/no/off}
+    else
+        get_proxy_url
+        REPLY=${${REPLY:+on}:-off}
+    fi
+}
+
+# toggle_proxy: switch the proxy on or off in this shell. Configured addresses are exported and
+# removed; a proxy that came from the environment (.zshrc, the parent shell) is put aside and restored.
+toggle_proxy() {
+    local var
+
+    if proxy_configured; then
+        [[ "$PROXY_ENABLED" = yes ]] && PROXY_ENABLED=no || PROXY_ENABLED=yes
+        apply_proxy_state
+        return
+    fi
+
+    get_proxy_url
+    if [[ -n "$REPLY" ]]; then
+        for var in $NITROSHELL_PROXY_VARS; do
+            [[ -n "${(P)var}" ]] && NITROSHELL_STASHED_PROXY[$var]=${(P)var}
+        done
+        unset $NITROSHELL_PROXY_VARS
+    elif (( ${#NITROSHELL_STASHED_PROXY} )); then
+        for var in ${(k)NITROSHELL_STASHED_PROXY}; do
+            export $var=${NITROSHELL_STASHED_PROXY[$var]}
+        done
+        NITROSHELL_STASHED_PROXY=()
+    else
+        return 1
+    fi
+
+    update_proxy_info
+}
+
+# the state is per shell: it is not in the config. A shell started from one with the proxy on
+# (exec zsh) inherits the variables, so it counts as on when they hold a configured address
+PROXY_ENABLED=no
+if [[ -n "$https_proxy$http_proxy$all_proxy" ]]; then
+    for url in "$PROXY_HTTP" "$PROXY_HTTPS" "$PROXY_ALL"; do
+        [[ -n "$url" && ( "$url" = "$https_proxy" || "$url" = "$http_proxy" || "$url" = "$all_proxy" ) ]] && PROXY_ENABLED=yes
+    done
+    unset url
+fi
 
 proxy_widget() {
     if toggle_proxy; then
         zle reset-prompt
-        zle -M "nitroshell: proxy ${${PROXY_ENABLED:/yes/on}:/no/off}"
+        proxy_state
+        zle -M "nitroshell: proxy $REPLY"
     else
         # zle -M shows the message below the prompt and clears it on the next key, but does not
         # render colors: show it, then repaint that line in red

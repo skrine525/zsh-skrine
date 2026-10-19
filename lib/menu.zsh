@@ -27,16 +27,25 @@ nitroshell_read() {
     return $ret
 }
 
+# arrays must exist: "${X[@]}" of an unset name gives one empty word, not none
+typeset -ga NITROSHELL_EDIT_LABELS NITROSHELL_EDIT_VALUES
+
 # nitroshell_select TITLE HINT ITEM...: menu driven with the arrow keys.
 # REPLY gets the number of the highlighted item and NITROSHELL_KEY the key that
 # ended the menu: enter, delete (d, Backspace, Delete) or quit (q, Esc).
 # NITROSHELL_SELECT_START is the item highlighted first (default 1).
+# Inline editing: when the caller fills the arrays NITROSHELL_EDIT_LABELS (the
+# part of the row before the value) and NITROSHELL_EDIT_VALUES (the current
+# values), Enter turns the highlighted row into a text field instead of ending
+# the menu. Enter applies (NITROSHELL_KEY=edit, the text in
+# NITROSHELL_EDIT_BUFFER), Esc cancels and goes back to the menu.
 nitroshell_select() {
-    local title=$1 hint=$2 key rest i
+    local title=$1 hint=$2 key rest i buf edit_width
     shift 2
-    local -a items=("$@")
-    local count=${#items} cur=${NITROSHELL_SELECT_START:-1}
+    local -a items=("$@") edit_labels=("${NITROSHELL_EDIT_LABELS[@]}") edit_values=("${NITROSHELL_EDIT_VALUES[@]}")
+    local count=${#items} cur=${NITROSHELL_SELECT_START:-1} editing=0 menu_hint=$hint
     NITROSHELL_SELECT_START=
+    NITROSHELL_EDIT_LABELS=() NITROSHELL_EDIT_VALUES=()
 
     (( cur > count )) && cur=$count
     (( cur < 1 )) && cur=1
@@ -59,7 +68,12 @@ nitroshell_select() {
                     '[x] '*) text="${c_on}[x]${c_rst}${text#\[x\]}" ;;
                     '[ ] '*) text="${c_off}[ ]${c_rst}${text#\[ \]}" ;;
                 esac
-                if (( i == cur )); then
+                if (( editing && i == cur )); then
+                    # the field: label, the text (its tail if it does not fit) and a cursor
+                    edit_width=$(( ${COLUMNS:-80} - ${#edit_labels[i]} - 8 ))
+                    (( edit_width < 10 )) && edit_width=10
+                    print -r -- "${c_frame}│${c_rst}  ${c_sel}❯${c_rst} ${c_b}${edit_labels[i]}${c_rst}${buf: -$edit_width}${c_sel}▏${c_rst}"
+                elif (( i == cur )); then
                     print -r -- "${c_frame}│${c_rst}  ${c_sel}❯${c_rst} ${c_b}${text}${c_rst}"
                 else
                     print -r -- "${c_frame}│${c_rst}    ${text}"
@@ -69,6 +83,31 @@ nitroshell_select() {
             drawn=1
 
             read -sk1 key || { NITROSHELL_KEY=quit; break }
+
+            if (( editing )); then
+                case "$key" in
+                    $'\e')
+                        if read -sk1 -t 0.1 rest; then
+                            # an escape sequence (arrows, Delete...): swallow it up to its last byte
+                            if [[ "$rest" = '[' || "$rest" = O ]]; then
+                                while read -sk1 -t 0.1 rest; do
+                                    [[ "$rest" == [@-~] ]] && break
+                                done
+                            fi
+                        else
+                            editing=0
+                            hint=$menu_hint
+                        fi
+                        ;;
+                    $'\n'|$'\r') NITROSHELL_KEY=edit; NITROSHELL_EDIT_BUFFER=$buf; break ;;
+                    $'\x7f'|$'\b') buf=${buf[1,-2]} ;;
+                    $'\x15') buf= ;;
+                    [[:cntrl:]]) ;;
+                    *) buf+=$key ;;
+                esac
+                continue
+            fi
+
             case "$key" in
                 $'\e')
                     if read -sk1 -t 0.1 rest; then
@@ -87,7 +126,16 @@ nitroshell_select() {
                     ;;
                 k) (( cur = cur > 1 ? cur - 1 : count )) ;;
                 j) (( cur = cur < count ? cur + 1 : 1 )) ;;
-                $'\n'|$'\r'|' ') NITROSHELL_KEY=enter; break ;;
+                $'\n'|$'\r'|' ')
+                    if (( ${#edit_labels} )); then
+                        editing=1
+                        buf=${edit_values[cur]}
+                        hint="Enter apply  Esc cancel  Ctrl+U clear"
+                    else
+                        NITROSHELL_KEY=enter
+                        break
+                    fi
+                    ;;
                 d|$'\x7f') NITROSHELL_KEY=delete; break ;;
                 q) NITROSHELL_KEY=quit; break ;;
             esac

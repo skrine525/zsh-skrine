@@ -57,8 +57,9 @@ nitroshell_menu() {
 
     while true; do
         # without addresses the proxy item opens their editor
-        if proxy_configured; then
-            items=("Proxy: ${${PROXY_ENABLED:/yes/on}:/no/off}")
+        if proxy_available; then
+            proxy_state
+            items=("Proxy: $REPLY")
         else
             items=("Proxy: not set (Enter to set the addresses)")
         fi

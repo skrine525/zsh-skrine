@@ -103,7 +103,6 @@ A different path can be set with the `NITROSHELL_CONFIG_FILE` variable in `~/.zs
 | `SHOW_PROXY` | `yes` / `no` | `yes` | Show in the prompt that a proxy is set in the shell |
 | `SHOW_VENV` | `yes` / `no` | `yes` | Show the active Python virtualenv |
 | `PROXY_HTTP`, `PROXY_HTTPS`, `PROXY_ALL` | proxy address | empty | Addresses that `Ctrl+P` and the menu switch on and off, e.g. `http://user:pass@host:3128` or `socks5://host:2080`; each one fills `http_proxy`/`HTTP_PROXY`, `https_proxy`/`HTTPS_PROXY` and `all_proxy`/`ALL_PROXY` respectively |
-| `PROXY_ENABLED` | `yes` / `no` | `no` | Whether the addresses are exported to the shell (`http_proxy`, `https_proxy`, `all_proxy` and uppercase) |
 | `REQUIRE_PROXY_FOR` | space-separated commands | empty | Commands that refuse to start until a proxy is set in the shell |
 
 The list can be edited interactively: run `nitroshell`, choose **Settings**, then **Commands that require a proxy** (`Enter` on a command does nothing, `d` deletes the highlighted one, `+ Add command` adds a new one; changes apply immediately). Example: forbid running `claude` and `codex` without a proxy:
@@ -114,7 +113,7 @@ REQUIRE_PROXY_FOR="claude codex"
 
 Only the presence of a proxy variable in the environment is checked, not whether the proxy works. The protection applies only to commands started from an interactive zsh: `command claude`, a full path, scripts and IDEs bypass it.
 
-The proxy addresses are edited in `nitroshell` → **Settings** → **Proxy addresses** (`Enter` edits the highlighted one, `d` clears it) or from **Proxy** in the main menu (`Ctrl+O`) while none is set. The first address you enter switches the proxy on. Once it is set, `Ctrl+P` (or that menu item) switches the proxy on and off in the current shell; the choice is kept between sessions. Without an address the environment is left untouched and `Ctrl+P` only shows a hint.
+The proxy addresses are edited in `nitroshell` → **Settings** → **Proxy addresses** (`Enter` turns the highlighted row into a text field right there: `Enter` applies, `Esc` cancels, `Ctrl+U` clears the text; `d` clears the address) or from **Proxy** in the main menu (`Ctrl+O`) while none is set. The first address you enter switches the proxy on. Once it is set, `Ctrl+P` (or that menu item) switches the proxy on and off in the current shell only: the on/off state is not saved, a new terminal starts with the proxy off, and `exec zsh` keeps it as it was. Without addresses `Ctrl+P` still switches off a proxy that comes from the environment (for example from `.zshrc`) and switches it back on; if there is none it only shows a hint.
 
 The prompt mode (**Settings** → **Prompt mode**, switches on `Enter`) and what is shown in the prompt (**Settings** → **Prompt display**) are written to `config/config.zsh` automatically, so your choice is kept between sessions.
 
