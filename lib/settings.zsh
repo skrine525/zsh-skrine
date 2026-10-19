@@ -13,8 +13,59 @@
 # The section can be opened directly with "nitroshell config <id>".
 NITROSHELL_CONFIG_SECTIONS=(
     "prompt|Prompt display"
+    "address|Proxy addresses"
     "proxy|Commands that require a proxy"
 )
+
+# section "address": the proxies that Ctrl+P and the main menu switch on and off
+nitroshell_config_address() {
+    local kind var url name start=1 had=no
+    local -a kinds=(http https all) items labels values
+
+    proxy_configured && had=yes
+
+    while true; do
+        items=() labels=() values=()
+        for kind in $kinds; do
+            var=PROXY_${(U)kind}
+            name=${(r:12:)${:-${(U)kind}_PROXY}}
+            mask_proxy ${(P)var}
+            items+=("$name$REPLY")
+            labels+=("$name")
+            values+=("${(P)var}")
+        done
+
+        # Enter edits the highlighted address right in its row
+        NITROSHELL_EDIT_LABELS=("${labels[@]}")
+        NITROSHELL_EDIT_VALUES=("${values[@]}")
+        NITROSHELL_SELECT_START=$start
+        nitroshell_select "Proxy addresses" "↑/↓ move  Enter edit  d clear  q back" "${items[@]}"
+        start=$REPLY
+
+        case "$NITROSHELL_KEY" in
+            quit) break ;;
+            delete) url= ;;
+            edit) url=${${NITROSHELL_EDIT_BUFFER## #}%% #} ;;
+            *) continue ;;
+        esac
+
+        var=PROXY_${(U)kinds[start]}
+        typeset -g $var=$url
+        save_option $var "$url"
+
+        # the first address switches the proxy on; the last one removed switches it off
+        if ! proxy_configured; then
+            PROXY_ENABLED=no
+        elif [[ $had = no ]]; then
+            PROXY_ENABLED=yes
+        fi
+        had=no; proxy_configured && had=yes
+        apply_proxy_state
+        # clearing the last address leaves nothing configured: remove what was exported
+        proxy_configured || unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
+        update_proxy_info
+    done
+}
 
 # section "proxy": commands that refuse to start without a proxy
 nitroshell_config_proxy() {
@@ -39,18 +90,19 @@ nitroshell_config_proxy() {
                 ;;
             enter)
                 (( REPLY > ${#cmds} )) || continue
-                read -r "cmd?Command to add (empty to cancel): " || break
+                nitroshell_read "Command to add (empty to cancel): " || break
+                cmd=$REPLY
                 [[ -n "$cmd" ]] || continue
 
                 if [[ ! "$cmd" =~ ^[A-Za-z0-9_.-]+$ ]]; then
-                    echo "Only letters, digits, '_', '.' and '-' are allowed."
+                    nitroshell_error "Only letters, digits, '_', '.' and '-' are allowed."
                     continue
                 elif (( ${cmds[(Ie)$cmd]} )); then
-                    echo "$cmd is already in the list."
+                    nitroshell_error "$cmd is already in the list."
                     continue
                 fi
 
-                (( $+commands[$cmd] )) || echo "Note: $cmd was not found in PATH."
+                (( $+commands[$cmd] )) || nitroshell_warn "$cmd was not found in PATH."
                 cmds+=($cmd)
                 start=${#cmds}
                 ;;
@@ -105,7 +157,7 @@ nitroshell_config_prompt() {
 # nitroshell_config [SECTION]: interactive settings
 nitroshell_config() {
     local entry start=1
-    local -a titles
+    local -a titles items
 
     # a section was given: open it directly
     if [[ -n "$1" ]]; then
@@ -116,21 +168,30 @@ nitroshell_config() {
             fi
         done
 
-        echo "nitroshell: unknown settings section '$1'" >&2
-        echo "Sections: ${(j:, :)${NITROSHELL_CONFIG_SECTIONS%%|*}}" >&2
+        nitroshell_error "nitroshell: unknown settings section '$1'"
+        nitroshell_error "Sections: ${(j:, :)${NITROSHELL_CONFIG_SECTIONS%%|*}}"
         return 1
     fi
 
     titles=(${NITROSHELL_CONFIG_SECTIONS#*|})
 
     while true; do
+        # the first item switches the prompt mode right here, the rest open sections
+        items=("Prompt mode: ${PROMPT_MODE/twoline/two lines}" "${titles[@]}")
+        items[1]=${items[1]/oneline/one line}
+
         NITROSHELL_SELECT_START=$start
-        nitroshell_select "nitroshell settings" "↑/↓ move  Enter open  q back" "${titles[@]}"
+        nitroshell_select "nitroshell settings" "↑/↓ move  Enter select  q back" "${items[@]}"
         start=$REPLY
 
         [[ "$NITROSHELL_KEY" = enter ]] || break
-        entry=${NITROSHELL_CONFIG_SECTIONS[REPLY]}
-        nitroshell_config_${entry%%|*}
+
+        if (( REPLY == 1 )); then
+            toggle_prompt_mode
+        else
+            entry=${NITROSHELL_CONFIG_SECTIONS[REPLY-1]}
+            nitroshell_config_${entry%%|*}
+        fi
     done
 }
 

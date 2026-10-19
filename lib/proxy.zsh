@@ -8,26 +8,22 @@ get_proxy_url() {
     REPLY=${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-${all_proxy:-$ALL_PROXY}}}}}
 }
 
-# show a marker (without credentials) when a proxy is set in the shell environment
+# show a marker (no address) when a proxy is set in the shell environment
 update_proxy_info() {
     NITROSHELL_PROXY_INFO=
-    [[ "$SHOW_PROXY" = yes ]] || return
+    [[ "$SHOW_PROXY" = yes ]] || return 0
 
     get_proxy_url
-    local proxy=$REPLY
-    [[ -n "$proxy" ]] || return
+    [[ -n "$REPLY" ]] || return 0
 
-    proxy=${proxy#*://}  # drop scheme
-    proxy=${proxy##*@}   # drop credentials
-    proxy=${proxy%%/*}   # drop path
-    NITROSHELL_PROXY_INFO=" %F{yellow}[proxy ${proxy//\%/%%}]%f"
+    NITROSHELL_PROXY_INFO=" %F{yellow}[proxy]%f"
 }
 
 # run_with_proxy_check COMMAND [ARGS...]: run COMMAND only if a proxy is set
 run_with_proxy_check() {
     get_proxy_url
     if [[ -z "$REPLY" ]]; then
-        print -u2 "$1: proxy is not set in the shell, refusing to start (REQUIRE_PROXY_FOR)"
+        nitroshell_error "$1: proxy is not set in the shell, refusing to start"
         return 1
     fi
 
@@ -58,4 +54,154 @@ autoload -Uz add-zsh-hook
 add-zsh-hook precmd update_proxy_info
 
 ### END OF PROXY INDICATOR
+##################################################
+
+##################################################
+### PROXY SWITCH (Ctrl+P)
+
+# proxy_configured: succeeds when at least one proxy address is set in the config
+proxy_configured() {
+    [[ -n "$PROXY_HTTP$PROXY_HTTPS$PROXY_ALL" ]]
+}
+
+# mask_proxy URL: put the address without login and password into REPLY ("not set" if empty)
+mask_proxy() {
+    REPLY=${1:-not set}
+    REPLY=${REPLY/:\/\/*@/://***@}
+}
+
+# apply_proxy_state: export the configured addresses (both lower and upper case names) when the
+# proxy is on and remove all six variables when it is off; without addresses the environment is left alone
+apply_proxy_state() {
+    local kind url
+
+    proxy_configured || return
+
+    for kind in http https all; do
+        url=${(P)${:-PROXY_${(U)kind}}}
+        if [[ "$PROXY_ENABLED" = yes && -n "$url" ]]; then
+            export ${kind}_proxy=$url ${(U)kind}_PROXY=$url
+        else
+            unset ${kind}_proxy ${(U)kind}_PROXY
+        fi
+    done
+
+    update_proxy_info
+}
+
+# the six variables, and where the ones set outside nitroshell wait while the proxy is off
+NITROSHELL_PROXY_VARS=(http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY)
+typeset -gA NITROSHELL_STASHED_PROXY
+
+# proxy_available: succeeds when there is something to switch: configured addresses,
+# a proxy set in the environment, or one that this shell switched off earlier
+proxy_available() {
+    proxy_configured && return
+    (( ${#NITROSHELL_STASHED_PROXY} )) && return
+    get_proxy_url
+    [[ -n "$REPLY" ]]
+}
+
+# proxy_state: put on or off into REPLY
+proxy_state() {
+    if proxy_configured; then
+        REPLY=${${PROXY_ENABLED:/yes/on}:/no/off}
+    else
+        get_proxy_url
+        REPLY=${${REPLY:+on}:-off}
+    fi
+}
+
+# toggle_proxy: switch the proxy on or off in this shell. Configured addresses are exported and
+# removed; a proxy that came from the environment (.zshrc, the parent shell) is put aside and restored.
+toggle_proxy() {
+    local var
+
+    if proxy_configured; then
+        [[ "$PROXY_ENABLED" = yes ]] && PROXY_ENABLED=no || PROXY_ENABLED=yes
+        apply_proxy_state
+        return
+    fi
+
+    get_proxy_url
+    if [[ -n "$REPLY" ]]; then
+        for var in $NITROSHELL_PROXY_VARS; do
+            [[ -n "${(P)var}" ]] && NITROSHELL_STASHED_PROXY[$var]=${(P)var}
+        done
+        unset $NITROSHELL_PROXY_VARS
+    elif (( ${#NITROSHELL_STASHED_PROXY} )); then
+        for var in ${(k)NITROSHELL_STASHED_PROXY}; do
+            export $var=${NITROSHELL_STASHED_PROXY[$var]}
+        done
+        NITROSHELL_STASHED_PROXY=()
+    else
+        return 1
+    fi
+
+    update_proxy_info
+}
+
+# the state is per shell: it is not in the config. A shell started from one with the proxy on
+# (exec zsh) inherits the variables, so it counts as on when they hold a configured address
+PROXY_ENABLED=no
+if [[ -n "$https_proxy$http_proxy$all_proxy" ]]; then
+    for url in "$PROXY_HTTP" "$PROXY_HTTPS" "$PROXY_ALL"; do
+        [[ -n "$url" && ( "$url" = "$https_proxy" || "$url" = "$http_proxy" || "$url" = "$all_proxy" ) ]] && PROXY_ENABLED=yes
+    done
+    unset url
+fi
+
+# nitroshell_zle_error MESSAGE: show an error below the prompt until the next key. zle -M does
+# not render colors, so it shows the text and the line is then repainted in red.
+nitroshell_zle_error() {
+    local msg="✗ $1"
+    zle -M "$msg"
+    zle -R
+    print -n $'\e7\e[1B\r\e[2K\e[1;31m'"$msg"$'\e[0m\e8' > /dev/tty
+}
+
+proxy_widget() {
+    if toggle_proxy; then
+        zle reset-prompt
+        proxy_state
+        zle -M "nitroshell: proxy $REPLY"
+    else
+        nitroshell_zle_error "nitroshell: no proxy addresses set; press Ctrl+O and choose Proxy"
+    fi
+}
+
+zle -N proxy_widget
+bindkey ^P proxy_widget
+
+# switch-proxy: the same as Ctrl+P, from the command line
+switch-proxy() {
+    if ! toggle_proxy; then
+        nitroshell_error "no proxy addresses set; run nitroshell and choose Proxy"
+        return 1
+    fi
+
+    proxy_state
+    echo "Proxy: ${(U)REPLY}"
+}
+
+# Enter: a command from REQUIRE_PROXY_FOR is not run without a proxy; the line stays in the
+# editor and a warning is shown. (The wrapper functions still guard scripts and later commands.)
+nitroshell_accept_line() {
+    local -a words=(${(z)BUFFER})
+    local cmd=$words[1]
+
+    if [[ -n "$cmd" ]] && (( ${NITROSHELL_WRAPPED[(Ie)$cmd]} )); then
+        get_proxy_url
+        if [[ -z "$REPLY" ]]; then
+            nitroshell_zle_error "$cmd: proxy is not set in the shell, refusing to start"
+            return
+        fi
+    fi
+
+    zle .accept-line
+}
+
+zle -N accept-line nitroshell_accept_line
+
+### END OF PROXY SWITCH
 ##################################################
