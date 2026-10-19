@@ -27,7 +27,7 @@ update_proxy_info() {
 run_with_proxy_check() {
     get_proxy_url
     if [[ -z "$REPLY" ]]; then
-        nitroshell_error "$1: proxy is not set in the shell, refusing to start (REQUIRE_PROXY_FOR)"
+        nitroshell_error "$1: proxy is not set in the shell, refusing to start"
         return 1
     fi
 
