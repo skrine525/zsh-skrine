@@ -102,6 +102,8 @@ A different path can be set with the `NITROSHELL_CONFIG_FILE` variable in `~/.zs
 | `SHOW_GIT` | `yes` / `no` | `no` | Show git (branch and status) in the prompt |
 | `SHOW_PROXY` | `yes` / `no` | `yes` | Show in the prompt that a proxy is set in the shell |
 | `SHOW_VENV` | `yes` / `no` | `yes` | Show the active Python virtualenv |
+| `PROXY_HTTP`, `PROXY_HTTPS`, `PROXY_ALL` | proxy address | empty | Addresses that `Ctrl+P` and the menu switch on and off, e.g. `http://user:pass@host:3128` or `socks5://host:2080`; each one fills `http_proxy`/`HTTP_PROXY`, `https_proxy`/`HTTPS_PROXY` and `all_proxy`/`ALL_PROXY` respectively |
+| `PROXY_ENABLED` | `yes` / `no` | `no` | Whether the addresses are exported to the shell (`http_proxy`, `https_proxy`, `all_proxy` and uppercase) |
 | `REQUIRE_PROXY_FOR` | space-separated commands | empty | Commands that refuse to start until a proxy is set in the shell |
 
 The list can be edited interactively: run `nitroshell`, choose **Settings**, then **Commands that require a proxy** (`Enter` on a command does nothing, `d` deletes the highlighted one, `+ Add command` adds a new one; changes apply immediately). Example: forbid running `claude` and `codex` without a proxy:
@@ -112,14 +114,16 @@ REQUIRE_PROXY_FOR="claude codex"
 
 Only the presence of a proxy variable in the environment is checked, not whether the proxy works. The protection applies only to commands started from an interactive zsh: `command claude`, a full path, scripts and IDEs bypass it.
 
-The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`, **Settings** → **Prompt display**) are written to `config/config.zsh` automatically, so your choice is kept between sessions.
+The proxy addresses are edited in `nitroshell` → **Settings** → **Proxy addresses** (`Enter` edits the highlighted one, `d` clears it) or from **Proxy** in the main menu (`Ctrl+O`) while none is set. The first address you enter switches the proxy on. Once it is set, `Ctrl+P` (or that menu item) switches the proxy on and off in the current shell; the choice is kept between sessions. Without an address the environment is left untouched and `Ctrl+P` only shows a hint.
+
+The prompt mode (**Settings** → **Prompt mode**, switches on `Enter`) and what is shown in the prompt (**Settings** → **Prompt display**) are written to `config/config.zsh` automatically, so your choice is kept between sessions.
 
 ## Key bindings
 
 | Key | Action |
 |---|---|
-| `Ctrl+P` | Switch the prompt mode: one line or two |
-| `Ctrl+O` | Open the nitroshell menu: settings (prompt display: git, proxy, Python venv; proxy commands) and update |
+| `Ctrl+P` | Switch the configured proxy on or off |
+| `Ctrl+O` | Open the nitroshell menu: proxy switch, settings (prompt mode, prompt display: git, proxy, Python venv; proxy addresses; proxy commands) and update |
 | `Ctrl+←` / `Ctrl+→` | Move one word back or forward |
 | `Ctrl+Del` | Delete the next word |
 | `Ctrl+U` | Delete everything up to the beginning of the line |

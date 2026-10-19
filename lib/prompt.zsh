@@ -1,4 +1,4 @@
-# The prompt: layout, blank line between prompts, prompt mode (Ctrl+P).
+# The prompt: layout, blank line between prompts, prompt mode.
 
 # the theme shows the virtualenv name itself (next to the path); otherwise activate prepends "(venv) " and breaks the first line
 VIRTUAL_ENV_DISABLE_PROMPT=1
@@ -82,11 +82,7 @@ toggle_prompt_mode() {
 
     save_option PROMPT_MODE $PROMPT_MODE
     configure_prompt
-    zle reset-prompt
 }
-
-zle -N toggle_prompt_mode
-bindkey ^P toggle_prompt_mode
 
 ### END OF TOGGLE PROMPT MODE
 ##################################################

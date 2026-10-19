@@ -9,17 +9,17 @@ nitroshell_update() {
     # the update resets the checkout to origin/main: do not destroy development work
     branch=$(git -C "$NITROSHELL_DIR" branch --show-current 2> /dev/null)
     if [[ "$branch" != main ]]; then
-        echo "nitroshell: the repository is on branch '${branch:-?}', not main; refusing to update" >&2
+        nitroshell_error "nitroshell: the repository is on branch '${branch:-?}', not main; refusing to update"
         return 1
     fi
 
     if [[ -n "$(git -C "$NITROSHELL_DIR" status --porcelain 2> /dev/null)" ]]; then
-        echo "nitroshell: the repository has local changes; commit or stash them first" >&2
+        nitroshell_error "nitroshell: the repository has local changes; commit or stash them first"
         return 1
     fi
 
     if ! git -C "$NITROSHELL_DIR" fetch origin &> /dev/null || ! git -C "$NITROSHELL_DIR" reset --hard origin/main &> /dev/null; then
-        echo "nitroshell: update failed" >&2
+        nitroshell_error "nitroshell: update failed"
         return 1
     fi
 
@@ -53,17 +53,28 @@ nitroshell_help() {
 # nitroshell_menu: main interactive menu
 nitroshell_menu() {
     local start=1
+    local -a items actions
 
     while true; do
+        # without addresses the proxy item opens their editor
+        if proxy_configured; then
+            items=("Proxy: ${${PROXY_ENABLED:/yes/on}:/no/off}")
+        else
+            items=("Proxy: not set (Enter to set the addresses)")
+        fi
+        items+=("Settings" "Update")
+        actions=(proxy config update)
+
         NITROSHELL_SELECT_START=$start
-        nitroshell_select "nitroshell $NITROSHELL_VERSION" "↑/↓ move  Enter select  q quit" "Settings" "Update"
+        nitroshell_select "nitroshell $NITROSHELL_VERSION" "↑/↓ move  Enter select  q quit" "${items[@]}"
         start=$REPLY
 
         [[ "$NITROSHELL_KEY" = enter ]] || break
 
-        case "$REPLY" in
-            1) nitroshell_config ;;
-            2) nitroshell_update; break ;;
+        case "${actions[REPLY]}" in
+            config) nitroshell_config ;;
+            proxy) toggle_proxy || nitroshell_config_address ;;
+            update) nitroshell_update; break ;;
         esac
     done
 }
@@ -80,7 +91,7 @@ nitroshell() {
             ;;
         config)
             if [[ ! -t 0 ]]; then
-                echo "nitroshell: config is interactive, run it in a terminal" >&2
+                nitroshell_error "nitroshell: config is interactive, run it in a terminal"
                 return 1
             fi
             nitroshell_config "${@:2}"
@@ -95,7 +106,7 @@ nitroshell() {
             nitroshell_help
             ;;
         *)
-            echo "nitroshell: unknown command '$1'" >&2
+            nitroshell_error "nitroshell: unknown command '$1'"
             return 1
             ;;
     esac
