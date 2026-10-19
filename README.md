@@ -1,4 +1,4 @@
-# skrine-zsh
+# nitroshell
 
 Тема для [Oh My Zsh](https://ohmyz.sh/) в стиле Kali Linux: двухстрочный промпт, подсветка синтаксиса, автоподсказки и удобные горячие клавиши.
 
@@ -46,7 +46,7 @@
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     ```
 
-2. Установите `skrine-zsh`:
+2. Установите `nitroshell`:
 
     ```bash
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/skrine525/zsh-skrine/refs/heads/main/install.sh)"
@@ -57,7 +57,7 @@
 3. Укажите тему в `~/.zshrc`:
 
     ```bash
-    ZSH_THEME="skrine-theme"
+    ZSH_THEME="nitroshell"
     ```
 
 4. Чтобы показывать git-информацию в промпте, включите плагин `git` в `~/.zshrc`:
@@ -84,7 +84,7 @@ update-theme
 
 Настройки хранятся в файле `~/.zsh/zsh-skrine/config.zsh`. Он создаётся автоматически при первом запуске, не попадает в git и не затрагивается обновлением. Если в новой версии темы появляются новые опции, они сами добавляются в файл со значениями по умолчанию.
 
-Другой путь можно задать переменной `SKRINE_CONFIG_FILE` в `~/.zshrc` (до загрузки Oh My Zsh).
+Другой путь можно задать переменной `NITROSHELL_CONFIG_FILE` в `~/.zshrc` (до загрузки Oh My Zsh).
 
 | Опция | Значения | По умолчанию | Описание |
 |---|---|---|---|
@@ -129,7 +129,7 @@ REQUIRE_PROXY_FOR="claude codex"
 2. Удалите тему и репозиторий:
 
     ```bash
-    rm ~/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme
+    rm ~/.oh-my-zsh/custom/themes/nitroshell.zsh-theme
     rm -rf ~/.zsh/zsh-skrine
     ```
 

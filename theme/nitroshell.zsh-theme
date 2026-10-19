@@ -4,9 +4,9 @@
 ### OPTIONS
 
 # user options live in config.zsh (next to the repository root, ignored by git)
-SKRINE_CONFIG_FILE=${SKRINE_CONFIG_FILE:-${0:A:h:h}/config.zsh}
+NITROSHELL_CONFIG_FILE=${NITROSHELL_CONFIG_FILE:-${0:A:h:h}/config.zsh}
 
-[[ -f "$SKRINE_CONFIG_FILE" ]] && . "$SKRINE_CONFIG_FILE"
+[[ -f "$NITROSHELL_CONFIG_FILE" ]] && . "$NITROSHELL_CONFIG_FILE"
 
 # migrate the old PROMPT_EXTRA_MODE option
 [[ -z "$SHOW_GIT" && "$PROMPT_EXTRA_MODE" = git ]] && SHOW_GIT=yes
@@ -33,7 +33,7 @@ save_option() {
     local name=$1 value=$2 line found=no
     local -a lines out
 
-    [[ -f "$SKRINE_CONFIG_FILE" ]] && lines=("${(@f)$(<$SKRINE_CONFIG_FILE)}")
+    [[ -f "$NITROSHELL_CONFIG_FILE" ]] && lines=("${(@f)$(<$NITROSHELL_CONFIG_FILE)}")
 
     for line in "${lines[@]}"; do
         if [[ "$line" == "$name="* ]]; then
@@ -46,22 +46,22 @@ save_option() {
 
     [[ $found = no ]] && out+=("$name=$value")
 
-    print -rl -- "${out[@]}" > "$SKRINE_CONFIG_FILE"
+    print -rl -- "${out[@]}" > "$NITROSHELL_CONFIG_FILE"
 }
 
 # add options missing from the config file, so new keys appear after an update
 for opt in USE_SYNTAX_HIGHLIGHTING AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN \
            USE_ZSH_AUTOSUGGESTIONS AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN \
            PROMPT_MODE SHOW_GIT SHOW_PROXY SHOW_VENV REQUIRE_PROXY_FOR; do
-    if [[ ! -f "$SKRINE_CONFIG_FILE" ]] || ! grep -q "^$opt=" "$SKRINE_CONFIG_FILE"; then
+    if [[ ! -f "$NITROSHELL_CONFIG_FILE" ]] || ! grep -q "^$opt=" "$NITROSHELL_CONFIG_FILE"; then
         save_option $opt ${(P)opt}
     fi
 done
 unset opt
 
 # drop the obsolete option from the config file
-if grep -q '^PROMPT_EXTRA_MODE=' "$SKRINE_CONFIG_FILE"; then
-    print -rl -- "${(@f)$(grep -v '^PROMPT_EXTRA_MODE=' "$SKRINE_CONFIG_FILE")}" > "$SKRINE_CONFIG_FILE"
+if grep -q '^PROMPT_EXTRA_MODE=' "$NITROSHELL_CONFIG_FILE"; then
+    print -rl -- "${(@f)$(grep -v '^PROMPT_EXTRA_MODE=' "$NITROSHELL_CONFIG_FILE")}" > "$NITROSHELL_CONFIG_FILE"
 fi
 unset PROMPT_EXTRA_MODE
 
@@ -114,7 +114,7 @@ get_proxy_url() {
 
 # show a marker (without credentials) when a proxy is set in the shell environment
 update_proxy_info() {
-    SKRINE_PROXY_INFO=
+    NITROSHELL_PROXY_INFO=
     [[ "$SHOW_PROXY" = yes ]] || return
 
     get_proxy_url
@@ -124,7 +124,7 @@ update_proxy_info() {
     proxy=${proxy#*://}  # drop scheme
     proxy=${proxy##*@}   # drop credentials
     proxy=${proxy%%/*}   # drop path
-    SKRINE_PROXY_INFO=" %F{yellow}[proxy ${proxy//\%/%%}]%f"
+    NITROSHELL_PROXY_INFO=" %F{yellow}[proxy ${proxy//\%/%%}]%f"
 }
 
 # run_with_proxy_check COMMAND [ARGS...]: run COMMAND only if a proxy is set
@@ -173,13 +173,13 @@ configure_prompt() {
     case "$PROMPT_MODE" in
         twoline)
             [[ "$SHOW_VENV" = yes ]] && venv_info='${VIRTUAL_ENV:+ (${VIRTUAL_ENV:t})}'
-            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]'"$venv_info"'${SKRINE_PROXY_INFO}'"$git_info"$'$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]'"$venv_info"'${NITROSHELL_PROXY_INFO}'"$git_info"$'$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
             RPROMPT=
             ;;
         oneline)
             [[ "$SHOW_VENV" = yes ]] && venv_info='${VIRTUAL_ENV:+(${VIRTUAL_ENV:t})}'
             PROMPT=$'%B$FGPROMPT%n@%m%b%F{reset}:%B$CYANPROMPT%~%b%F{reset}%(#.#.$) '
-            RPROMPT="$venv_info"'${SKRINE_PROXY_INFO}'"$git_info"
+            RPROMPT="$venv_info"'${NITROSHELL_PROXY_INFO}'"$git_info"
             ;;
     esac
 }

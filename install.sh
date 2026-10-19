@@ -29,7 +29,12 @@ if [ -d "$DEST_DIR" ]; then
         exit 1
     fi
 
-    ln -sf "$DEST_DIR/theme/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
+    ln -sf "$DEST_DIR/theme/nitroshell.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/nitroshell.zsh-theme"
+
+    # the theme used to be called skrine-theme: keep old installations working
+    if [ -L "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme" ]; then
+        ln -sf "$DEST_DIR/theme/nitroshell.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
+    fi
     echo "Success. Restart your zsh."
 else
     echo "Installing..."
@@ -41,6 +46,11 @@ else
         exit 1
     fi
 
-    ln -sf "$DEST_DIR/theme/skrine-theme.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
+    ln -sf "$DEST_DIR/theme/nitroshell.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/nitroshell.zsh-theme"
+
+    # the theme used to be called skrine-theme: keep old installations working
+    if [ -L "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme" ]; then
+        ln -sf "$DEST_DIR/theme/nitroshell.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/skrine-theme.zsh-theme"
+    fi
     echo "Success."
 fi
