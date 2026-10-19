@@ -3,16 +3,53 @@
 ##################################################
 ### OPTIONS
 
-USE_SYNTAX_HIGHLIGHTING=yes
-AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN=yes
+# user options live in config.zsh (next to the repository root, ignored by git)
+SKRINE_CONFIG_FILE=${SKRINE_CONFIG_FILE:-${0:A:h:h}/config.zsh}
 
-USE_ZSH_AUTOSUGGESTIONS=yes
-AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN=yes
+[[ -f "$SKRINE_CONFIG_FILE" ]] && . "$SKRINE_CONFIG_FILE"
 
-PROMPT_MODE=twoline
-NEWLINE_BEFORE_PROMPT=yes
+# defaults for everything config.zsh did not set
+: ${USE_SYNTAX_HIGHLIGHTING:=yes}
+: ${AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN:=yes}
 
-PROMPT_EXTRA_MODE=none
+: ${USE_ZSH_AUTOSUGGESTIONS:=yes}
+: ${AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN:=yes}
+
+: ${PROMPT_MODE:=twoline}
+: ${NEWLINE_BEFORE_PROMPT:=yes}
+
+: ${PROMPT_EXTRA_MODE:=none}
+
+# save_option NAME VALUE: persist an option to the config file
+save_option() {
+    local name=$1 value=$2 line found=no
+    local -a lines out
+
+    [[ -f "$SKRINE_CONFIG_FILE" ]] && lines=("${(@f)$(<$SKRINE_CONFIG_FILE)}")
+
+    for line in "${lines[@]}"; do
+        if [[ "$line" == "$name="* ]]; then
+            out+=("$name=$value")
+            found=yes
+        else
+            out+=("$line")
+        fi
+    done
+
+    [[ $found = no ]] && out+=("$name=$value")
+
+    print -rl -- "${out[@]}" > "$SKRINE_CONFIG_FILE"
+}
+
+# add options missing from the config file, so new keys appear after an update
+for opt in USE_SYNTAX_HIGHLIGHTING AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN \
+           USE_ZSH_AUTOSUGGESTIONS AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN \
+           PROMPT_MODE PROMPT_EXTRA_MODE; do
+    if [[ ! -f "$SKRINE_CONFIG_FILE" ]] || ! grep -q "^$opt=" "$SKRINE_CONFIG_FILE"; then
+        save_option $opt ${(P)opt}
+    fi
+done
+unset opt
 
 ### END OF OPTIONS
 ##################################################
@@ -27,6 +64,9 @@ setopt promptsubst         # enable command substitution in prompt
 setopt share_history       # all sessions share the same history files
 
 WORDCHARS=${WORDCHARS//\/} # Don't consider certain characters part of the word
+
+# the theme shows the virtualenv name itself (next to the path); otherwise activate prepends "(venv) " and breaks the first line
+VIRTUAL_ENV_DISABLE_PROMPT=1
 
 # hide EOL sign ('%')
 PROMPT_EOL_MARK=""
@@ -69,22 +109,22 @@ configure_prompt() {
 
     case "$PROMPT_MODE" in
         twoline)
-            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]${VIRTUAL_ENV:+ (${VIRTUAL_ENV:t})}$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
             RPROMPT=
 
             case "$PROMPT_EXTRA_MODE" in
                 git)
-                    PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT] $(git_prompt_info)$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+                    PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]${VIRTUAL_ENV:+ (${VIRTUAL_ENV:t})} $(git_prompt_info)$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
                     ;;
             esac
             ;;
         oneline)
             PROMPT=$'%B$FGPROMPT%n@%m%b%F{reset}:%B$CYANPROMPT%~%b%F{reset}%(#.#.$) '
-            RPROMPT=
+            RPROMPT='${VIRTUAL_ENV:+(${VIRTUAL_ENV:t})}'
 
             case "$PROMPT_EXTRA_MODE" in
                 git)
-                    RPROMPT="$(git_prompt_info)"
+                    RPROMPT='${VIRTUAL_ENV:+(${VIRTUAL_ENV:t})} $(git_prompt_info)'
                     ;;
             esac
             ;;
@@ -194,6 +234,7 @@ toggle_prompt_mode() {
         PROMPT_MODE=oneline
     fi
 
+    save_option PROMPT_MODE $PROMPT_MODE
     configure_prompt
     zle reset-prompt
 }
@@ -214,6 +255,11 @@ toggle_prompt_extra_mode() {
         PROMPT_EXTRA_MODE=git
     fi
 
+    save_option PROMPT_EXTRA_MODE $PROMPT_EXTRA_MODE
+
+    # oh-my-zsh computes git info asynchronously and registers the handler only if
+    # git_prompt_info was in the prompt at startup; register it for a live toggle
+    (( $+functions[_omz_register_handler] )) && _omz_register_handler _omz_git_prompt_info
     configure_prompt
     zle reset-prompt
 }
