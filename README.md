@@ -23,7 +23,7 @@ A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, 
 
 - **Two prompt modes**: a two-line Kali style prompt (default) and a one-line `user@host:~/path$`.
 - **Git in the prompt**: branch and repository status (off by default).
-- **Proxy indicator**: when `https_proxy`, `http_proxy` or `all_proxy` is set in the environment, the prompt shows `[proxy host:port]` (the login and password are hidden).
+- **Proxy indicator**: when `https_proxy`, `http_proxy` or `all_proxy` is set in the environment, the prompt shows `[proxy]` (the address is not shown).
 - **Python virtualenv** name next to the path, without breaking the prompt frame.
 - **Root** is highlighted in red and gets `#` instead of `$`.
 - **Shortened long paths**: from 6 levels deep, the first directory, `…` and the last 4 are shown.
@@ -121,7 +121,7 @@ The prompt mode (**Settings** → **Prompt mode**, switches on `Enter`) and what
 
 | Key | Action |
 |---|---|
-| `Ctrl+P` | Switch the configured proxy on or off |
+| `Ctrl+P` | Switch the configured proxy on or off (the `switch-proxy` command does the same) |
 | `Ctrl+O` | Open the nitroshell menu: proxy switch, settings (prompt mode, prompt display: git, proxy, Python venv; proxy addresses; proxy commands) and update |
 | `Ctrl+←` / `Ctrl+→` | Move one word back or forward |
 | `Ctrl+Del` | Delete the next word |

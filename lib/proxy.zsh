@@ -8,19 +8,15 @@ get_proxy_url() {
     REPLY=${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-${all_proxy:-$ALL_PROXY}}}}}
 }
 
-# show a marker (without credentials) when a proxy is set in the shell environment
+# show a marker (no address) when a proxy is set in the shell environment
 update_proxy_info() {
     NITROSHELL_PROXY_INFO=
     [[ "$SHOW_PROXY" = yes ]] || return 0
 
     get_proxy_url
-    local proxy=$REPLY
-    [[ -n "$proxy" ]] || return 0
+    [[ -n "$REPLY" ]] || return 0
 
-    proxy=${proxy#*://}  # drop scheme
-    proxy=${proxy##*@}   # drop credentials
-    proxy=${proxy%%/*}   # drop path
-    NITROSHELL_PROXY_INFO=" %F{yellow}[proxy ${proxy//\%/%%}]%f"
+    NITROSHELL_PROXY_INFO=" %F{yellow}[proxy]%f"
 }
 
 # run_with_proxy_check COMMAND [ARGS...]: run COMMAND only if a proxy is set
@@ -176,6 +172,17 @@ proxy_widget() {
 
 zle -N proxy_widget
 bindkey ^P proxy_widget
+
+# switch-proxy: the same as Ctrl+P, from the command line
+switch-proxy() {
+    if ! toggle_proxy; then
+        nitroshell_error "no proxy addresses set; run nitroshell and choose Proxy"
+        return 1
+    fi
+
+    proxy_state
+    echo "Proxy: ${(U)REPLY}"
+}
 
 # Enter: a command from REQUIRE_PROXY_FOR is not run without a proxy; the line stays in the
 # editor and a warning is shown. (The wrapper functions still guard scripts and later commands.)
