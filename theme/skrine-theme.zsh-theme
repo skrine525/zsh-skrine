@@ -8,6 +8,9 @@ SKRINE_CONFIG_FILE=${SKRINE_CONFIG_FILE:-${0:A:h:h}/config.zsh}
 
 [[ -f "$SKRINE_CONFIG_FILE" ]] && . "$SKRINE_CONFIG_FILE"
 
+# migrate the old PROMPT_EXTRA_MODE option
+[[ -z "$SHOW_GIT" && "$PROMPT_EXTRA_MODE" = git ]] && SHOW_GIT=yes
+
 # defaults for everything config.zsh did not set
 : ${USE_SYNTAX_HIGHLIGHTING:=yes}
 : ${AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN:=yes}
@@ -18,7 +21,12 @@ SKRINE_CONFIG_FILE=${SKRINE_CONFIG_FILE:-${0:A:h:h}/config.zsh}
 : ${PROMPT_MODE:=twoline}
 : ${NEWLINE_BEFORE_PROMPT:=yes}
 
-: ${PROMPT_EXTRA_MODE:=none}
+: ${SHOW_GIT:=no}
+: ${SHOW_PROXY:=yes}
+: ${SHOW_VENV:=yes}
+
+# space-separated commands that refuse to start while no proxy is set, e.g. "claude codex"
+: ${REQUIRE_PROXY_FOR:=}
 
 # save_option NAME VALUE: persist an option to the config file
 save_option() {
@@ -44,12 +52,18 @@ save_option() {
 # add options missing from the config file, so new keys appear after an update
 for opt in USE_SYNTAX_HIGHLIGHTING AUTO_DOWNLOAD_SYNTAX_HIGHLIGHTING_PLUGIN \
            USE_ZSH_AUTOSUGGESTIONS AUTO_DOWNLOAD_ZSH_AUTOSUGGESTIONS_PLUGIN \
-           PROMPT_MODE PROMPT_EXTRA_MODE; do
+           PROMPT_MODE SHOW_GIT SHOW_PROXY SHOW_VENV REQUIRE_PROXY_FOR; do
     if [[ ! -f "$SKRINE_CONFIG_FILE" ]] || ! grep -q "^$opt=" "$SKRINE_CONFIG_FILE"; then
         save_option $opt ${(P)opt}
     fi
 done
 unset opt
+
+# drop the obsolete option from the config file
+if grep -q '^PROMPT_EXTRA_MODE=' "$SKRINE_CONFIG_FILE"; then
+    print -rl -- "${(@f)$(grep -v '^PROMPT_EXTRA_MODE=' "$SKRINE_CONFIG_FILE")}" > "$SKRINE_CONFIG_FILE"
+fi
+unset PROMPT_EXTRA_MODE
 
 ### END OF OPTIONS
 ##################################################
@@ -91,6 +105,52 @@ setopt hist_verify            # show command with history expansion to user befo
 TIMEFMT=$'\nreal\t%E\nuser\t%U\nsys\t%S\ncpu\t%P'
 
 ##################################################
+### PROXY INDICATOR
+
+# get_proxy_url: put the proxy address from the shell environment into REPLY (empty if none)
+get_proxy_url() {
+    REPLY=${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-${all_proxy:-$ALL_PROXY}}}}}
+}
+
+# show a marker (without credentials) when a proxy is set in the shell environment
+update_proxy_info() {
+    SKRINE_PROXY_INFO=
+    [[ "$SHOW_PROXY" = yes ]] || return
+
+    get_proxy_url
+    local proxy=$REPLY
+    [[ -n "$proxy" ]] || return
+
+    proxy=${proxy#*://}  # drop scheme
+    proxy=${proxy##*@}   # drop credentials
+    proxy=${proxy%%/*}   # drop path
+    SKRINE_PROXY_INFO=" %F{yellow}[proxy ${proxy//\%/%%}]%f"
+}
+
+# run_with_proxy_check COMMAND [ARGS...]: run COMMAND only if a proxy is set
+run_with_proxy_check() {
+    get_proxy_url
+    if [[ -z "$REPLY" ]]; then
+        print -u2 "$1: proxy is not set in the shell, refusing to start (REQUIRE_PROXY_FOR)"
+        return 1
+    fi
+
+    command "$@"
+}
+
+# wrap every command from REQUIRE_PROXY_FOR
+for cmd in ${=REQUIRE_PROXY_FOR}; do
+    [[ "$cmd" =~ ^[A-Za-z0-9_.-]+$ ]] && functions[$cmd]="run_with_proxy_check $cmd \"\$@\""
+done
+unset cmd
+
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd update_proxy_info
+
+### END OF PROXY INDICATOR
+##################################################
+
+##################################################
 ### CONFIGURE PROMPT
 
 configure_prompt() {
@@ -107,26 +167,19 @@ configure_prompt() {
         FGPROMPT="$FG[027]"
     fi
 
+    local venv_info='' git_info=''
+    [[ "$SHOW_GIT" = yes ]] && git_info=' $(git_prompt_info)'
+
     case "$PROMPT_MODE" in
         twoline)
-            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]${VIRTUAL_ENV:+ (${VIRTUAL_ENV:t})}$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
+            [[ "$SHOW_VENV" = yes ]] && venv_info='${VIRTUAL_ENV:+ (${VIRTUAL_ENV:t})}'
+            PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]'"$venv_info"'${SKRINE_PROXY_INFO}'"$git_info"$'$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
             RPROMPT=
-
-            case "$PROMPT_EXTRA_MODE" in
-                git)
-                    PROMPT=$'$CYANPROMPT┌───\(%B$FGPROMPT%n@%m%b$CYANPROMPT)-[%B%F{reset}%(6~.%-1~/…/%4~.%5~)%b$CYANPROMPT]${VIRTUAL_ENV:+ (${VIRTUAL_ENV:t})} $(git_prompt_info)$CYANPROMPT\n└─%B%(#.%F{red}#.$FGPROMPT$)%b%F{reset} '
-                    ;;
-            esac
             ;;
         oneline)
+            [[ "$SHOW_VENV" = yes ]] && venv_info='${VIRTUAL_ENV:+(${VIRTUAL_ENV:t})}'
             PROMPT=$'%B$FGPROMPT%n@%m%b%F{reset}:%B$CYANPROMPT%~%b%F{reset}%(#.#.$) '
-            RPROMPT='${VIRTUAL_ENV:+(${VIRTUAL_ENV:t})}'
-
-            case "$PROMPT_EXTRA_MODE" in
-                git)
-                    RPROMPT='${VIRTUAL_ENV:+(${VIRTUAL_ENV:t})} $(git_prompt_info)'
-                    ;;
-            esac
+            RPROMPT="$venv_info"'${SKRINE_PROXY_INFO}'"$git_info"
             ;;
     esac
 }
@@ -246,28 +299,65 @@ bindkey ^P toggle_prompt_mode
 ##################################################
 
 ##################################################
-### TOGGLE PROMPT EXTRA MODE
+### PROMPT SETTINGS MENU
 
-toggle_prompt_extra_mode() {
-    if [ "$PROMPT_EXTRA_MODE" = git ]; then
-        PROMPT_EXTRA_MODE=none
+# toggle_option NAME: flip a yes/no option and persist it
+toggle_option() {
+    if [[ "${(P)1}" = yes ]]; then
+        typeset -g $1=no
     else
-        PROMPT_EXTRA_MODE=git
+        typeset -g $1=yes
     fi
 
-    save_option PROMPT_EXTRA_MODE $PROMPT_EXTRA_MODE
-
-    # oh-my-zsh computes git info asynchronously and registers the handler only if
-    # git_prompt_info was in the prompt at startup; register it for a live toggle
-    (( $+functions[_omz_register_handler] )) && _omz_register_handler _omz_git_prompt_info
-    configure_prompt
-    zle reset-prompt
+    save_option $1 ${(P)1}
 }
 
-zle -N toggle_prompt_extra_mode
-bindkey ^O toggle_prompt_extra_mode
+# interactive menu (Ctrl+O): choose what is shown in the prompt
+prompt_settings() {
+    local key mark_git mark_proxy mark_venv
 
-### END OF TOGGLE PROMPT EXTRA MODE
+    while true; do
+        [[ "$SHOW_GIT" = yes ]] && mark_git=x || mark_git=' '
+        [[ "$SHOW_PROXY" = yes ]] && mark_proxy=x || mark_proxy=' '
+        [[ "$SHOW_VENV" = yes ]] && mark_venv=x || mark_venv=' '
+
+        zle -M "Show in prompt:
+  1) [$mark_git] git
+  2) [$mark_proxy] proxy
+  3) [$mark_venv] python venv
+1-3 toggle, any other key closes"
+        read -srk1 key
+
+        case "$key" in
+            1)
+                toggle_option SHOW_GIT
+                # oh-my-zsh computes git info asynchronously and registers the handler only if
+                # git_prompt_info was in the prompt at startup; register it for a live toggle
+                (( $+functions[_omz_register_handler] )) && _omz_register_handler _omz_git_prompt_info
+                ;;
+            2)
+                toggle_option SHOW_PROXY
+                update_proxy_info
+                ;;
+            3) toggle_option SHOW_VENV ;;
+            *)
+                # swallow the rest of an escape sequence (arrow keys etc.)
+                [[ "$key" = $'\e' ]] && while read -srk1 -t 0.05 key; do :; done
+                break
+                ;;
+        esac
+
+        configure_prompt
+        zle reset-prompt
+    done
+
+    zle -M ""
+}
+
+zle -N prompt_settings
+bindkey ^O prompt_settings
+
+### END OF PROMPT SETTINGS MENU
 ##################################################
 
 
