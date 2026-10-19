@@ -3,8 +3,11 @@
 ##################################################
 ### OPTIONS
 
-# user options live in config.zsh (next to the repository root, ignored by git)
-NITROSHELL_CONFIG_FILE=${NITROSHELL_CONFIG_FILE:-${0:A:h:h}/config.zsh}
+# repository root (the theme file may be a symlink into it)
+NITROSHELL_DIR=${0:A:h:h}
+
+# user options live in config.zsh (in the repository root, ignored by git)
+NITROSHELL_CONFIG_FILE=${NITROSHELL_CONFIG_FILE:-$NITROSHELL_DIR/config.zsh}
 
 [[ -f "$NITROSHELL_CONFIG_FILE" ]] && . "$NITROSHELL_CONFIG_FILE"
 
@@ -422,10 +425,37 @@ if [ -f /etc/zsh_command_not_found ]; then
 fi
 
 ##################################################
-### ALIASES
+### NITROSHELL COMMAND
 
-# update-theme
-alias update-theme="wget --no-cache -qO - https://raw.githubusercontent.com/skrine525/nitroshell/refs/heads/main/install.sh | sh"
+nitroshell() {
+    case "$1" in
+        update)
+            if ! git -C "$NITROSHELL_DIR" fetch origin &> /dev/null || ! git -C "$NITROSHELL_DIR" reset --hard origin/main &> /dev/null; then
+                echo "nitroshell: update failed" >&2
+                return 1
+            fi
+
+            # the installer relinks the theme and keeps .zshrc in order
+            NITROSHELL_DEST_DIR=$NITROSHELL_DIR sh "$NITROSHELL_DIR/install.sh"
+            ;;
+        ""|help|-h|--help)
+            echo "Usage: nitroshell <command>"
+            echo
+            echo "Commands:"
+            echo "  update    update nitroshell to the latest version"
+            ;;
+        *)
+            echo "nitroshell: unknown command '$1'" >&2
+            return 1
+            ;;
+    esac
+}
+
+### END OF NITROSHELL COMMAND
+##################################################
+
+##################################################
+### ALIASES
 
 # force zsh to show the complete history
 alias history="history 0"

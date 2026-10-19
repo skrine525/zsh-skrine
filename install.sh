@@ -31,10 +31,6 @@ if [ -n "$missing" ]; then
     exit 1
 fi
 
-if ! command -v wget > /dev/null 2>&1; then
-    echo "Warning: wget is not installed, the update-theme command will not work."
-fi
-
 ### END OF CHECK DEPENDENCIES
 ##################################################
 

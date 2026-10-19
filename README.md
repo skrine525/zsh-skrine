@@ -31,14 +31,15 @@ A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, 
 - **Automatic plugin installation**: plugins that are not found on the system are downloaded to `~/.zsh/`.
 - **Colored output** of `ls`, `grep`, `diff`, `ip`, `pacman`, `less` and Tab completion lists.
 - **Shell conveniences**: `cd` by directory name alone, history shared between sessions, numeric file sorting, `#` comments in interactive mode.
-- **Aliases**: `ll`, `la`, `l`, `dc` (`docker compose`), `history` (full history), `update-theme`.
+- **`nitroshell update`** command to update the theme.
+- **Aliases**: `ll`, `la`, `l`, `dc` (`docker compose`), `history` (full history).
 
 ## Requirements
 
 - **Zsh**
 - **Oh My Zsh**
 - **git**: to install the theme and download plugins
-- **curl** to install, **wget** for the `update-theme` command
+- **curl**: to run the installer
 
 ## Installation
 
@@ -74,7 +75,7 @@ A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, 
 ## Updating
 
 ```bash
-update-theme
+nitroshell update
 ```
 
 > User settings are stored in `config.zsh`, which git does not track, so updating does not affect them.
