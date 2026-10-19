@@ -164,6 +164,17 @@ newline_before_prompt() {
 
 add-zsh-hook precmd newline_before_prompt
 
+# after clearing the screen the next prompt is the first one on it again
+clear() {
+    command clear "$@"
+    NITROSHELL_PROMPT_SHOWN=
+}
+
+reset() {
+    command reset "$@"
+    NITROSHELL_PROMPT_SHOWN=
+}
+
 ### END OF NEWLINE BEFORE PROMPT
 ##################################################
 
