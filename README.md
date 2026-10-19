@@ -15,6 +15,7 @@ A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, 
 - [Updating](#updating)
 - [Configuration](#configuration)
 - [Key bindings](#key-bindings)
+- [Project structure](#project-structure)
 - [Uninstalling](#uninstalling)
 - [License](#license)
 
@@ -31,7 +32,7 @@ A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, 
 - **Automatic plugin installation**: plugins that are not found on the system are downloaded to `~/.zsh/`.
 - **Colored output** of `ls`, `grep`, `diff`, `ip`, `pacman`, `less` and Tab completion lists.
 - **Shell conveniences**: `cd` by directory name alone, history shared between sessions, numeric file sorting, `#` comments in interactive mode.
-- **`nitroshell update`** command to update the theme.
+- **`nitroshell` command**: an interactive menu (arrow keys and Enter) with settings and updating; also available as `nitroshell config [section]`, `nitroshell update` and `nitroshell version`.
 - **Aliases**: `ll`, `la`, `l`, `dc` (`docker compose`), `history` (full history).
 
 ## Requirements
@@ -74,15 +75,19 @@ A Kali Linux style theme for [Oh My Zsh](https://ohmyz.sh/): a two-line prompt, 
 
 ## Updating
 
+Run `nitroshell` and choose **Update**, or run it directly:
+
 ```bash
 nitroshell update
 ```
 
-> User settings are stored in `config.zsh`, which git does not track, so updating does not affect them.
+The update resets the installation to the latest `main`, so it refuses to run if the repository has local changes or is on another branch. `nitroshell version` shows the installed version.
+
+> User settings are stored in `config/config.zsh`, which git does not track, so updating does not affect them.
 
 ## Configuration
 
-Settings are stored in `~/.zsh/nitroshell/config.zsh`. The file is created automatically on the first start, is ignored by git and is not touched by updates. When a new version of the theme adds options, they are appended to the file with their default values.
+Settings are stored in `~/.zsh/nitroshell/config/config.zsh`. The file is created automatically on the first start, is ignored by git and is not touched by updates. When a new version of the theme adds options, they are appended to the file with their default values.
 
 A different path can be set with the `NITROSHELL_CONFIG_FILE` variable in `~/.zshrc` (before Oh My Zsh is loaded).
 
@@ -99,7 +104,7 @@ A different path can be set with the `NITROSHELL_CONFIG_FILE` variable in `~/.zs
 | `SHOW_VENV` | `yes` / `no` | `yes` | Show the active Python virtualenv |
 | `REQUIRE_PROXY_FOR` | space-separated commands | empty | Commands that refuse to start until a proxy is set in the shell |
 
-Example: forbid running `claude` and `codex` without a proxy:
+The list can be edited interactively: run `nitroshell`, choose **Settings**, then **Commands that require a proxy** (`Enter` on a command does nothing, `d` deletes the highlighted one, `+ Add command` adds a new one; changes apply immediately). Example: forbid running `claude` and `codex` without a proxy:
 
 ```bash
 REQUIRE_PROXY_FOR="claude codex"
@@ -107,14 +112,14 @@ REQUIRE_PROXY_FOR="claude codex"
 
 Only the presence of a proxy variable in the environment is checked, not whether the proxy works. The protection applies only to commands started from an interactive zsh: `command claude`, a full path, scripts and IDEs bypass it.
 
-The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`) are written to `config.zsh` automatically, so your choice is kept between sessions.
+The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`, **Settings** → **Prompt display**) are written to `config/config.zsh` automatically, so your choice is kept between sessions.
 
 ## Key bindings
 
 | Key | Action |
 |---|---|
 | `Ctrl+P` | Switch the prompt mode: one line or two |
-| `Ctrl+O` | Prompt settings menu: choose what to show (git, proxy, Python venv) |
+| `Ctrl+O` | Open the nitroshell menu: settings (prompt display: git, proxy, Python venv; proxy commands) and update |
 | `Ctrl+←` / `Ctrl+→` | Move one word back or forward |
 | `Ctrl+Del` | Delete the next word |
 | `Ctrl+U` | Delete everything up to the beginning of the line |
@@ -123,6 +128,17 @@ The prompt mode (`Ctrl+P`) and what is shown in the prompt (`Ctrl+O`) are writte
 | `PgUp` / `PgDn` | Beginning and end of the history |
 | `Shift+Tab` | Undo the last action |
 | `Space` | Expand history (`!!` and the like) as you type |
+
+## Project structure
+
+```
+nitroshell.zsh-theme   # entry point: loads the modules from lib/
+lib/                   # modules: options, shell, proxy, prompt, plugins, environment,
+                       #          menu, settings, command, aliases
+config/config.zsh      # your settings (created on first start, ignored by git)
+install.sh             # installer and updater
+VERSION                # current version
+```
 
 ## Uninstalling
 

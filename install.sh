@@ -45,7 +45,7 @@ if [ -d "$DEST_DIR" ]; then
         exit 1
     fi
 
-    # config.zsh is ignored by git, so the reset does not touch user settings
+    # config/ is ignored by git, so the reset does not touch user settings
     if ! git fetch origin > /dev/null 2>&1 || ! git reset --hard origin/main > /dev/null 2>&1; then
         echo "Updating failed. Exiting..."
         exit 1
@@ -71,11 +71,11 @@ fi
 ### LINK THE THEME
 
 mkdir -p "$THEMES_DIR"
-ln -sf "$DEST_DIR/theme/$THEME_NAME.zsh-theme" "$THEMES_DIR/$THEME_NAME.zsh-theme"
+ln -sf "$DEST_DIR/$THEME_NAME.zsh-theme" "$THEMES_DIR/$THEME_NAME.zsh-theme"
 
 # the theme used to be called skrine-theme: keep old installations working
 if [ -L "$THEMES_DIR/skrine-theme.zsh-theme" ]; then
-    ln -sf "$DEST_DIR/theme/$THEME_NAME.zsh-theme" "$THEMES_DIR/skrine-theme.zsh-theme"
+    ln -sf "$DEST_DIR/$THEME_NAME.zsh-theme" "$THEMES_DIR/skrine-theme.zsh-theme"
 fi
 
 ### END OF LINK THE THEME
