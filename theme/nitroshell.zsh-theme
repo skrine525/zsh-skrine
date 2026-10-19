@@ -6,6 +6,10 @@
 # repository root (the theme file may be a symlink into it)
 NITROSHELL_DIR=${0:A:h:h}
 
+# current version, kept in the VERSION file in the repository root
+NITROSHELL_VERSION=unknown
+[[ -f "$NITROSHELL_DIR/VERSION" ]] && NITROSHELL_VERSION=$(<"$NITROSHELL_DIR/VERSION")
+
 # user options live in config.zsh (in the repository root, ignored by git)
 NITROSHELL_CONFIG_FILE=${NITROSHELL_CONFIG_FILE:-$NITROSHELL_DIR/config.zsh}
 
@@ -35,6 +39,9 @@ NITROSHELL_CONFIG_FILE=${NITROSHELL_CONFIG_FILE:-$NITROSHELL_DIR/config.zsh}
 save_option() {
     local name=$1 value=$2 line found=no
     local -a lines out
+
+    # values with spaces have to be quoted, otherwise sourcing the file would run them
+    [[ "$value" == *" "* ]] && value="\"$value\""
 
     [[ -f "$NITROSHELL_CONFIG_FILE" ]] && lines=("${(@f)$(<$NITROSHELL_CONFIG_FILE)}")
 
@@ -141,11 +148,25 @@ run_with_proxy_check() {
     command "$@"
 }
 
-# wrap every command from REQUIRE_PROXY_FOR
-for cmd in ${=REQUIRE_PROXY_FOR}; do
-    [[ "$cmd" =~ ^[A-Za-z0-9_.-]+$ ]] && functions[$cmd]="run_with_proxy_check $cmd \"\$@\""
-done
-unset cmd
+# apply_proxy_requirements: (re)create the wrappers for the commands from REQUIRE_PROXY_FOR
+typeset -ga NITROSHELL_WRAPPED
+apply_proxy_requirements() {
+    local cmd
+
+    for cmd in $NITROSHELL_WRAPPED; do
+        unfunction $cmd 2> /dev/null
+    done
+    NITROSHELL_WRAPPED=()
+
+    for cmd in ${=REQUIRE_PROXY_FOR}; do
+        if [[ "$cmd" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+            functions[$cmd]="run_with_proxy_check $cmd \"\$@\""
+            NITROSHELL_WRAPPED+=($cmd)
+        fi
+    done
+}
+
+apply_proxy_requirements
 
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd update_proxy_info
@@ -438,22 +459,259 @@ fi
 ##################################################
 ### NITROSHELL COMMAND
 
+# nitroshell_select TITLE HINT ITEM...: menu driven with the arrow keys.
+# REPLY gets the number of the highlighted item and NITROSHELL_KEY the key that
+# ended the menu: enter, delete (d, Backspace, Delete) or quit (q, Esc).
+# NITROSHELL_SELECT_START is the item highlighted first (default 1).
+nitroshell_select() {
+    local title=$1 hint=$2 key rest i
+    shift 2
+    local -a items=("$@")
+    local count=${#items} cur=${NITROSHELL_SELECT_START:-1}
+    NITROSHELL_SELECT_START=
+
+    (( cur > count )) && cur=$count
+    (( cur < 1 )) && cur=1
+
+    print -n '\e[?25l'
+    {
+        local drawn=0
+        while true; do
+            (( drawn )) && print -n "\e[$(( count + 3 ))A"
+            print -n '\e[J'
+            print -r -- "$title"
+            for i in {1..$count}; do
+                if (( i == cur )); then
+                    print -r -- $'  \e[7m > '"${items[i]}"$' \e[0m'
+                else
+                    print -r -- "    ${items[i]}"
+                fi
+            done
+            print
+            print -r -- "$hint"
+            drawn=1
+
+            read -sk1 key || { NITROSHELL_KEY=quit; break }
+            case "$key" in
+                $'\e')
+                    if read -sk1 -t 0.1 rest; then
+                        if [[ "$rest" = '[' || "$rest" = O ]]; then
+                            read -sk1 -t 0.1 rest
+                            case "$rest" in
+                                A) (( cur = cur > 1 ? cur - 1 : count )) ;;
+                                B) (( cur = cur < count ? cur + 1 : 1 )) ;;
+                                3) read -sk1 -t 0.1 rest; NITROSHELL_KEY=delete; break ;;
+                            esac
+                        fi
+                    else
+                        NITROSHELL_KEY=quit
+                        break
+                    fi
+                    ;;
+                k) (( cur = cur > 1 ? cur - 1 : count )) ;;
+                j) (( cur = cur < count ? cur + 1 : 1 )) ;;
+                $'\n'|$'\r') NITROSHELL_KEY=enter; break ;;
+                d|$'\x7f') NITROSHELL_KEY=delete; break ;;
+                q) NITROSHELL_KEY=quit; break ;;
+            esac
+        done
+    } always {
+        # erase the menu and bring the cursor back
+        print -n "\e[$(( count + 3 ))A\e[J\e[?25h"
+    }
+
+    REPLY=$cur
+}
+
+##################################################
+### INTERACTIVE SETTINGS (nitroshell config)
+
+# Settings sections shown in the "nitroshell config" menu, as "id|title".
+# To add a section:
+#   1. write a function nitroshell_config_<id> that shows and edits its options
+#      with nitroshell_select in a loop and returns when the user goes back
+#      (see nitroshell_config_proxy);
+#   2. persist changes with save_option and re-apply them right away;
+#   3. register it here.
+# The section can be opened directly with "nitroshell config <id>".
+NITROSHELL_CONFIG_SECTIONS=(
+    "proxy|Commands that require a proxy"
+)
+
+# section "proxy": commands that refuse to start without a proxy
+nitroshell_config_proxy() {
+    local cmd start=1
+    local -a cmds items
+
+    while true; do
+        cmds=(${=REQUIRE_PROXY_FOR})
+        items=("${cmds[@]}" "+ Add command")
+
+        NITROSHELL_SELECT_START=$start
+        nitroshell_select "Commands that require a proxy (REQUIRE_PROXY_FOR)" "↑/↓ move  Enter select  d delete  q back" "${items[@]}"
+        start=$REPLY
+
+        case "$NITROSHELL_KEY" in
+            quit)
+                break
+                ;;
+            delete)
+                (( REPLY <= ${#cmds} )) || continue
+                cmds[REPLY]=()
+                ;;
+            enter)
+                (( REPLY > ${#cmds} )) || continue
+                read -r "cmd?Command to add (empty to cancel): " || break
+                [[ -n "$cmd" ]] || continue
+
+                if [[ ! "$cmd" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+                    echo "Only letters, digits, '_', '.' and '-' are allowed."
+                    continue
+                elif (( ${cmds[(Ie)$cmd]} )); then
+                    echo "$cmd is already in the list."
+                    continue
+                fi
+
+                (( $+commands[$cmd] )) || echo "Note: $cmd was not found in PATH."
+                cmds+=($cmd)
+                start=${#cmds}
+                ;;
+        esac
+
+        REQUIRE_PROXY_FOR="${cmds[*]}"
+        save_option REQUIRE_PROXY_FOR "$REQUIRE_PROXY_FOR"
+        apply_proxy_requirements
+    done
+}
+
+# nitroshell_config [SECTION]: interactive settings
+nitroshell_config() {
+    local entry start=1
+    local -a titles
+
+    # a section was given: open it directly
+    if [[ -n "$1" ]]; then
+        for entry in $NITROSHELL_CONFIG_SECTIONS; do
+            if [[ "${entry%%|*}" = "$1" ]]; then
+                nitroshell_config_${1}
+                return
+            fi
+        done
+
+        echo "nitroshell: unknown settings section '$1'" >&2
+        echo "Sections: ${(j:, :)${NITROSHELL_CONFIG_SECTIONS%%|*}}" >&2
+        return 1
+    fi
+
+    titles=(${NITROSHELL_CONFIG_SECTIONS#*|})
+
+    while true; do
+        NITROSHELL_SELECT_START=$start
+        nitroshell_select "nitroshell settings" "↑/↓ move  Enter open  q back" "${titles[@]}"
+        start=$REPLY
+
+        [[ "$NITROSHELL_KEY" = enter ]] || break
+        entry=${NITROSHELL_CONFIG_SECTIONS[REPLY]}
+        nitroshell_config_${entry%%|*}
+    done
+}
+
+### END OF INTERACTIVE SETTINGS
+##################################################
+
+# nitroshell_update: update to the latest version
+nitroshell_update() {
+    # the version before the update (the loaded one stays old until the shell is restarted)
+    local old_version=unknown new_version=unknown branch
+    [[ -f "$NITROSHELL_DIR/VERSION" ]] && old_version=$(<"$NITROSHELL_DIR/VERSION")
+
+    # the update resets the checkout to origin/main: do not destroy development work
+    branch=$(git -C "$NITROSHELL_DIR" branch --show-current 2> /dev/null)
+    if [[ "$branch" != main ]]; then
+        echo "nitroshell: the repository is on branch '${branch:-?}', not main; refusing to update" >&2
+        return 1
+    fi
+
+    if [[ -n "$(git -C "$NITROSHELL_DIR" status --porcelain 2> /dev/null)" ]]; then
+        echo "nitroshell: the repository has local changes; commit or stash them first" >&2
+        return 1
+    fi
+
+    if ! git -C "$NITROSHELL_DIR" fetch origin &> /dev/null || ! git -C "$NITROSHELL_DIR" reset --hard origin/main &> /dev/null; then
+        echo "nitroshell: update failed" >&2
+        return 1
+    fi
+
+    # the installer relinks the theme and keeps .zshrc in order
+    NITROSHELL_DEST_DIR=$NITROSHELL_DIR sh "$NITROSHELL_DIR/install.sh" || return
+
+    [[ -f "$NITROSHELL_DIR/VERSION" ]] && new_version=$(<"$NITROSHELL_DIR/VERSION")
+
+    if [[ "$new_version" = "$old_version" ]]; then
+        echo "Already up to date (version $new_version)."
+    else
+        echo "Updated: $old_version -> $new_version"
+    fi
+}
+
+# nitroshell_help: usage of the non-interactive form
+nitroshell_help() {
+    echo "nitroshell $NITROSHELL_VERSION"
+    echo
+    echo "Usage: nitroshell [command]"
+    echo
+    echo "Without a command an interactive menu is shown."
+    echo
+    echo "Commands:"
+    echo "  config [section]    settings (sections: ${(j:, :)${NITROSHELL_CONFIG_SECTIONS%%|*}})"
+    echo "  update              update nitroshell to the latest version"
+    echo "  version             show the current version"
+    echo "  help                show this help"
+}
+
+# nitroshell_menu: main interactive menu
+nitroshell_menu() {
+    local start=1
+
+    while true; do
+        NITROSHELL_SELECT_START=$start
+        nitroshell_select "nitroshell $NITROSHELL_VERSION" "↑/↓ move  Enter select  q quit" "Settings" "Update"
+        start=$REPLY
+
+        [[ "$NITROSHELL_KEY" = enter ]] || break
+
+        case "$REPLY" in
+            1) nitroshell_config ;;
+            2) nitroshell_update; break ;;
+        esac
+    done
+}
+
+# nitroshell [command]: no command opens the interactive menu
 nitroshell() {
     case "$1" in
-        update)
-            if ! git -C "$NITROSHELL_DIR" fetch origin &> /dev/null || ! git -C "$NITROSHELL_DIR" reset --hard origin/main &> /dev/null; then
-                echo "nitroshell: update failed" >&2
+        "")
+            if [[ -t 0 ]]; then
+                nitroshell_menu
+            else
+                nitroshell_help
+            fi
+            ;;
+        config)
+            if [[ ! -t 0 ]]; then
+                echo "nitroshell: config is interactive, run it in a terminal" >&2
                 return 1
             fi
-
-            # the installer relinks the theme and keeps .zshrc in order
-            NITROSHELL_DEST_DIR=$NITROSHELL_DIR sh "$NITROSHELL_DIR/install.sh"
+            nitroshell_config "${@:2}"
             ;;
-        ""|help|-h|--help)
-            echo "Usage: nitroshell <command>"
-            echo
-            echo "Commands:"
-            echo "  update    update nitroshell to the latest version"
+        update)
+            nitroshell_update
+            ;;
+        version|-v|--version)
+            echo "nitroshell $NITROSHELL_VERSION"
+            ;;
+        help|-h|--help)
+            nitroshell_help
             ;;
         *)
             echo "nitroshell: unknown command '$1'" >&2
